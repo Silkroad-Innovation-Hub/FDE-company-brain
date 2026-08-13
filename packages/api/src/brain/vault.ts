@@ -7,6 +7,8 @@ export interface BrainNoteMeta {
   type: string;
   tags: string[];
   links: string[];
+  sections: string[];
+  facts: string[];
   size: number;
 }
 
@@ -14,6 +16,8 @@ export interface BrainGraphNode {
   id: string;
   type: string;
   degree: number;
+  label?: string;
+  parent?: string;
 }
 
 export interface BrainGraphLink {
@@ -42,6 +46,9 @@ export interface BrainNote {
 
 const WIKILINK_PATTERN = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
+const HEADING_PATTERN = /^##\s+(.+?)\s*$/gm;
+const BOLD_PATTERN = /\*\*([^*\n]+)\*\*/g;
+const FACT_LABEL_LIMIT = 42;
 
 interface Frontmatter {
   type: string;
@@ -78,6 +85,36 @@ function extractWikilinks(body: string): string[] {
   return [...links];
 }
 
+function stripWikilinks(text: string): string {
+  return text.replace(WIKILINK_PATTERN, (_match, target: string) => target.trim());
+}
+
+function extractSections(body: string): string[] {
+  const sections = new Set<string>();
+  for (const match of body.matchAll(HEADING_PATTERN)) {
+    const heading = stripWikilinks(match[1]).trim();
+    if (heading) {
+      sections.add(heading);
+    }
+  }
+  return [...sections];
+}
+
+function extractFacts(body: string): string[] {
+  const facts = new Set<string>();
+  for (const match of body.matchAll(BOLD_PATTERN)) {
+    const fact = stripWikilinks(match[1]).trim();
+    if (fact) {
+      facts.add(fact);
+    }
+  }
+  return [...facts];
+}
+
+function truncateLabel(label: string): string {
+  return label.length > FACT_LABEL_LIMIT ? `${label.slice(0, FACT_LABEL_LIMIT - 1)}…` : label;
+}
+
 function isSafeNoteId(noteId: string): boolean {
   return (
     noteId.length > 0 &&
@@ -102,6 +139,8 @@ export async function loadVault(vaultPath: string): Promise<BrainNoteMeta[]> {
         type: meta.type,
         tags: meta.tags,
         links: extractWikilinks(body),
+        sections: extractSections(body),
+        facts: extractFacts(body),
         size: body.split(/\s+/).length,
       };
     }),
@@ -111,6 +150,7 @@ export async function loadVault(vaultPath: string): Promise<BrainNoteMeta[]> {
 export function buildBrainGraph(notes: BrainNoteMeta[]): BrainGraph {
   const noteIds = new Set(notes.map((note) => note.id));
   const degrees = new Map<string, number>();
+  const taggedNotes = new Map<string, string[]>();
   const links: BrainGraphLink[] = [];
   const types: Record<string, number> = {};
   let words = 0;
@@ -118,6 +158,11 @@ export function buildBrainGraph(notes: BrainNoteMeta[]): BrainGraph {
   for (const note of notes) {
     types[note.type] = (types[note.type] ?? 0) + 1;
     words += note.size;
+    for (const tag of note.tags) {
+      const tagged = taggedNotes.get(tag) ?? [];
+      tagged.push(note.id);
+      taggedNotes.set(tag, tagged);
+    }
     for (const target of note.links) {
       if (!noteIds.has(target) || target === note.id) {
         continue;
@@ -128,14 +173,38 @@ export function buildBrainGraph(notes: BrainNoteMeta[]): BrainGraph {
     }
   }
 
+  const noteLinkCount = links.length;
+  const nodes: BrainGraphNode[] = notes.map((note) => ({
+    id: note.id,
+    type: note.type,
+    degree: degrees.get(note.id) ?? 0,
+  }));
+
+  for (const note of notes) {
+    for (const section of note.sections) {
+      const id = `${note.id}#${section}`;
+      nodes.push({ id, type: 'topic', degree: 1, label: section, parent: note.id });
+      links.push({ source: note.id, target: id });
+    }
+    note.facts.forEach((fact, index) => {
+      const id = `${note.id}#fact-${index}`;
+      nodes.push({ id, type: 'fact', degree: 1, label: truncateLabel(fact), parent: note.id });
+      links.push({ source: note.id, target: id });
+    });
+  }
+
+  for (const [tag, tagged] of taggedNotes) {
+    const id = `#${tag}`;
+    nodes.push({ id, type: 'tag', degree: tagged.length, label: id });
+    for (const noteId of tagged) {
+      links.push({ source: noteId, target: id });
+    }
+  }
+
   return {
-    nodes: notes.map((note) => ({
-      id: note.id,
-      type: note.type,
-      degree: degrees.get(note.id) ?? 0,
-    })),
+    nodes,
     links,
-    stats: { notes: notes.length, links: links.length, words, types },
+    stats: { notes: notes.length, links: noteLinkCount, words, types },
   };
 }
 

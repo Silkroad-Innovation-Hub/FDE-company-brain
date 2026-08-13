@@ -449,6 +449,8 @@ export type TBrainGraphNode = {
   id: string;
   type: string;
   degree: number;
+  label?: string;
+  parent?: string;
 };
 
 export type TBrainGraphLink = {

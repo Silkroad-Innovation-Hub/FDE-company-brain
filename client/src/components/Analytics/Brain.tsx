@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { X, Search } from 'lucide-react';
 import { forceLink, forceManyBody, forceCollide, forceCenter, forceSimulation } from 'd3-force';
-import type { SimulationNodeDatum } from 'd3-force';
+import type { SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
 import type { TBrainGraph } from 'librechat-data-provider';
 import { useBrainGraphQuery, useBrainNoteQuery } from '~/data-provider';
 import { useLocalize } from '~/hooks';
@@ -16,27 +16,86 @@ const GRAPH_HEIGHT = 620;
  * sample.ts): SVG presentation attributes cannot resolve theme variables.
  */
 const typeColors: Record<string, string> = {
-  company: '#C9A96A',
+  company: '#BCA370',
   product: '#7C8DA6',
   program: '#8A9B8E',
   finance: '#B8869B',
-  person: '#C98A6A',
-  facility: '#6AA9C9',
-  org: '#9A8FC9',
+  person: '#BC8A70',
+  facility: '#70A3BC',
+  org: '#978EBC',
   intel: '#8F8F73',
 };
 
 const fallbackColor = '#8A8A8A';
 
+const satelliteTypes = new Set(['topic', 'fact', 'tag']);
+
+const NOTE_RADIUS_MIN = 5.5;
+const NOTE_RADIUS_MAX = 19;
+const SATELLITE_RADIUS = 2.6;
+const HUB_COUNT = 4;
+
 interface LayoutNode extends SimulationNodeDatum {
   id: string;
   type: string;
   degree: number;
+  label?: string;
+  parent?: string;
+  radius: number;
+  satellite: boolean;
+  hub: boolean;
 }
 
-interface LayoutLink {
+interface LayoutLink extends SimulationLinkDatum<LayoutNode> {
   source: LayoutNode;
   target: LayoutNode;
+}
+
+/** Deterministic per-node jitter so satellite orbits vary without Math.random. */
+function hash01(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0) / 4294967295;
+}
+
+const FIT_PADDING_X = 76;
+const FIT_PADDING_Y = 44;
+
+/**
+ * Force layouts settle into a blob much smaller than the canvas; stretch the
+ * settled coordinates so the graph always fills the viewBox edge to edge.
+ */
+function fitToBounds(nodes: LayoutNode[]): void {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const node of nodes) {
+    minX = Math.min(minX, node.x ?? 0);
+    maxX = Math.max(maxX, node.x ?? 0);
+    minY = Math.min(minY, node.y ?? 0);
+    maxY = Math.max(maxY, node.y ?? 0);
+  }
+  const scaleX = (GRAPH_WIDTH - FIT_PADDING_X * 2) / Math.max(maxX - minX, 1);
+  const scaleY = (GRAPH_HEIGHT - FIT_PADDING_Y * 2) / Math.max(maxY - minY, 1);
+  for (const node of nodes) {
+    node.x = FIT_PADDING_X + ((node.x ?? 0) - minX) * scaleX;
+    node.y = FIT_PADDING_Y + ((node.y ?? 0) - minY) * scaleY;
+  }
+}
+
+function noteRadiusScale(noteDegrees: number[]): (degree: number) => number {
+  let minDegree = Infinity;
+  let maxDegree = -Infinity;
+  for (const degree of noteDegrees) {
+    minDegree = Math.min(minDegree, degree);
+    maxDegree = Math.max(maxDegree, degree);
+  }
+  const span = Math.max(maxDegree - minDegree, 1);
+  return (degree) =>
+    NOTE_RADIUS_MIN + (NOTE_RADIUS_MAX - NOTE_RADIUS_MIN) * Math.sqrt((degree - minDegree) / span);
 }
 
 function useGraphLayout(graph?: TBrainGraph) {
@@ -44,30 +103,55 @@ function useGraphLayout(graph?: TBrainGraph) {
     if (!graph) {
       return { nodes: [] as LayoutNode[], links: [] as LayoutLink[] };
     }
-    const nodes: LayoutNode[] = graph.nodes.map((node) => ({ ...node }));
-    const links = graph.links.map((link) => ({ ...link }));
+    const noteDegrees: number[] = [];
+    for (const node of graph.nodes) {
+      if (!satelliteTypes.has(node.type)) {
+        noteDegrees.push(node.degree);
+      }
+    }
+    const radiusFor = noteRadiusScale(noteDegrees);
+    const hubThreshold = [...noteDegrees].sort((a, b) => b - a)[
+      Math.min(HUB_COUNT, noteDegrees.length) - 1
+    ];
+
+    const nodes: LayoutNode[] = graph.nodes.map((node) => {
+      const satellite = satelliteTypes.has(node.type);
+      return {
+        ...node,
+        satellite,
+        radius: satellite ? SATELLITE_RADIUS : radiusFor(node.degree),
+        hub: !satellite && node.degree >= hubThreshold,
+      };
+    });
+    const links = graph.links.map((link) => ({ ...link })) as unknown as LayoutLink[];
+
+    const isNotePair = (link: LayoutLink) => !link.source.satellite && !link.target.satellite;
     const simulation = forceSimulation(nodes)
       .force(
         'link',
-        forceLink(links)
-          .id((node) => (node as LayoutNode).id)
-          .distance(80)
-          .strength(0.4),
+        forceLink<LayoutNode, LayoutLink>(links)
+          .id((node) => node.id)
+          .distance((link) =>
+            isNotePair(link) ? 150 : 26 + 46 * hash01(link.target.id + link.source.id),
+          )
+          .strength((link) => (isNotePair(link) ? 0.02 : 0.85)),
       )
-      .force('charge', forceManyBody().strength(-320))
+      .force(
+        'charge',
+        forceManyBody<LayoutNode>().strength((node) => (node.satellite ? -26 : -480)),
+      )
       .force('center', forceCenter(GRAPH_WIDTH / 2, GRAPH_HEIGHT / 2))
       .force(
         'collide',
-        forceCollide<LayoutNode>().radius((node) => 14 + Math.sqrt(node.degree) * 3),
+        forceCollide<LayoutNode>().radius((node) =>
+          node.satellite ? node.radius + 3 : Math.max(node.radius + 12, node.id.length * 2.6),
+        ),
       )
       .stop();
     simulation.tick(300);
-    return { nodes, links: links as unknown as LayoutLink[] };
+    fitToBounds(nodes);
+    return { nodes, links };
   }, [graph]);
-}
-
-function nodeRadius(degree: number): number {
-  return 6 + Math.sqrt(degree) * 2.4;
 }
 
 const wikilinkPattern = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
@@ -212,21 +296,35 @@ export default function BrainExplorer() {
 
   const focus = hovered ?? selected;
   const matchesQuery = useCallback(
-    (id: string) => query.length > 0 && id.toLowerCase().includes(query.toLowerCase()),
+    (node: LayoutNode) =>
+      query.length > 0 && (node.label ?? node.id).toLowerCase().includes(query.toLowerCase()),
     [query],
   );
 
   const isDimmed = useCallback(
-    (id: string) => {
+    (node: LayoutNode) => {
       if (query.length > 0) {
-        return !matchesQuery(id);
+        return !matchesQuery(node);
       }
       if (focus == null) {
         return false;
       }
-      return id !== focus && !(neighbors.get(focus)?.has(id) ?? false);
+      return node.id !== focus && !(neighbors.get(focus)?.has(node.id) ?? false);
     },
     [focus, neighbors, query, matchesQuery],
+  );
+
+  const showsSatelliteLabel = useCallback(
+    (node: LayoutNode) => {
+      if (matchesQuery(node)) {
+        return true;
+      }
+      if (focus == null) {
+        return false;
+      }
+      return node.id === focus || (neighbors.get(focus)?.has(node.id) ?? false);
+    },
+    [focus, neighbors, matchesQuery],
   );
 
   const typeEntries = Object.entries(graph?.stats.types ?? {}).sort((a, b) => b[1] - a[1]);
@@ -277,7 +375,13 @@ export default function BrainExplorer() {
               {links.map((link, index) => {
                 const active =
                   focus != null && (link.source.id === focus || link.target.id === focus);
-                const restingOpacity = focus != null || query ? 0.06 : 0.16;
+                const starburst = link.source.satellite || link.target.satellite;
+                const quiet = focus != null || query.length > 0;
+                let restingOpacity = starburst ? 0.22 : 0.06;
+                if (quiet) {
+                  restingOpacity = 0.03;
+                }
+                const restingWidth = starburst ? 0.7 : 0.9;
                 return (
                   <line
                     key={index}
@@ -287,41 +391,81 @@ export default function BrainExplorer() {
                     y2={link.target.y}
                     stroke="currentColor"
                     className="text-text-tertiary"
-                    strokeOpacity={active ? 0.65 : restingOpacity}
-                    strokeWidth={active ? 1.4 : 1}
+                    strokeOpacity={active ? 0.7 : restingOpacity}
+                    strokeWidth={active ? 1.4 : restingWidth}
                   />
                 );
               })}
               {nodes.map((node) => {
-                const dimmed = isDimmed(node.id);
-                const radius = nodeRadius(node.degree);
+                const dimmed = isDimmed(node);
+                const targetNote = node.satellite ? node.parent : node.id;
                 return (
                   <g
                     key={node.id}
                     transform={`translate(${node.x}, ${node.y})`}
-                    className="cursor-pointer"
-                    opacity={dimmed ? 0.2 : 1}
+                    className={targetNote != null ? 'cursor-pointer' : undefined}
+                    opacity={dimmed ? 0.15 : 1}
                     onMouseEnter={() => setHovered(node.id)}
                     onMouseLeave={() => setHovered(null)}
-                    onClick={() => setSelected(node.id)}
+                    onClick={() => targetNote != null && setSelected(targetNote)}
                   >
-                    <circle
-                      r={radius}
-                      fill={typeColors[node.type] ?? fallbackColor}
-                      stroke={selected === node.id ? 'currentColor' : 'none'}
-                      strokeWidth={2}
-                      className="text-text-primary"
-                    />
-                    <text
-                      y={radius + 12}
-                      textAnchor="middle"
-                      fill="currentColor"
-                      className="select-none text-text-secondary"
-                      fontSize={11}
-                    >
-                      {node.id}
-                    </text>
+                    <circle r={Math.max(node.radius, 8)} fill="transparent" />
+                    {node.hub && (
+                      <circle
+                        r={node.radius + 6}
+                        fill={typeColors[node.type] ?? fallbackColor}
+                        opacity={0.15}
+                      />
+                    )}
+                    {node.satellite ? (
+                      <circle
+                        r={node.radius}
+                        fill="currentColor"
+                        className="text-text-tertiary"
+                        fillOpacity={0.75}
+                      />
+                    ) : (
+                      <circle
+                        r={node.radius}
+                        fill={typeColors[node.type] ?? fallbackColor}
+                        stroke={selected === node.id ? 'currentColor' : 'none'}
+                        strokeWidth={1.5}
+                        className="text-text-primary"
+                      />
+                    )}
                   </g>
+                );
+              })}
+              {nodes.map((node) => {
+                if (node.satellite && !showsSatelliteLabel(node)) {
+                  return null;
+                }
+                const scale = (node.radius - NOTE_RADIUS_MIN) / (NOTE_RADIUS_MAX - NOTE_RADIUS_MIN);
+                const restingLabelOpacity = node.satellite ? 0.85 : 1;
+                return (
+                  <text
+                    key={node.id}
+                    x={node.x}
+                    y={(node.y ?? 0) + node.radius + (node.satellite ? 8 : 11)}
+                    textAnchor="middle"
+                    fill="currentColor"
+                    opacity={isDimmed(node) ? 0.15 : restingLabelOpacity}
+                    className={
+                      node.satellite
+                        ? 'pointer-events-none select-none text-text-tertiary'
+                        : 'pointer-events-none select-none text-text-secondary'
+                    }
+                    fontSize={node.satellite ? 7.5 : 8.5 + 4 * scale}
+                    fontWeight={node.hub ? 600 : 400}
+                    style={{
+                      paintOrder: 'stroke',
+                      stroke: 'var(--surface-primary, #171717)',
+                      strokeWidth: 3,
+                      strokeLinejoin: 'round',
+                    }}
+                  >
+                    {node.label ?? node.id}
+                  </text>
                 );
               })}
             </svg>
