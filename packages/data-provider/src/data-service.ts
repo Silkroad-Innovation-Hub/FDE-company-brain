@@ -1263,6 +1263,23 @@ export function updateSkillPermissions(
   return request.put(endpoints.updateSkillPermissions(variables.roleName), variables.updates);
 }
 
+/* Todos */
+export function getTodos(): Promise<t.TTodosResponse> {
+  return request.get(endpoints.todos());
+}
+
+export function createTodo(payload: t.TTodoRequest): Promise<t.TTodo> {
+  return request.post(endpoints.todos(), payload);
+}
+
+export function updateTodo(todoId: string, payload: t.TTodoRequest): Promise<t.TTodo> {
+  return request.put(endpoints.todos(todoId), payload);
+}
+
+export function deleteTodo(todoId: string): Promise<t.TTodoDeleteResponse> {
+  return request.delete(endpoints.todos(todoId));
+}
+
 /* Tags */
 export function getConversationTags(): Promise<t.TConversationTagsResponse> {
   return request.get(endpoints.conversationTags());

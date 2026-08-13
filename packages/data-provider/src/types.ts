@@ -445,6 +445,23 @@ export type TSharedLinkGetResponse = Omit<TSharedLinkResponse, 'shareId'> & {
   snapshotFiles?: boolean;
 };
 
+export type TTodo = {
+  _id: string;
+  user: string;
+  text: string;
+  done: boolean;
+  position: number;
+  dueDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TTodosResponse = TTodo[];
+
+export type TTodoRequest = Partial<Omit<TTodo, '_id' | 'user' | 'createdAt' | 'updatedAt'>>;
+
+export type TTodoDeleteResponse = { deleted: boolean };
+
 // type for getting conversation tags
 export type TConversationTagsResponse = TConversationTag[];
 // type for creating conversation tag
