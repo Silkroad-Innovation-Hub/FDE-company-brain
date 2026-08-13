@@ -1,4 +1,4 @@
-# Hermes — Project Brief
+# Silkroad — Project Brief
 
 **Status: SOURCE OF TRUTH (added August 13, 2026).** Synthesizes Amir's dictated product
 vision (authoritative) with Plan v2 ([`plan.md`](./plan.md), Aug 10, 2026). Where the two
@@ -22,18 +22,19 @@ The buyer doesn't care about AI; they care about outcomes. They don't self-serve
 free trials, and buy through peers. That means high-touch sales and a done-for-you managed
 service: one bundled monthly fee, no API keys, nothing for the client to learn or maintain.
 
-## 2. The product: the Hermes agent
+## 2. The product: the Silkroad agent
 
-The product is the **Hermes agent** (working name; Amir has spelled it out as H-E-R-M-E-S /
-"Hermis" in dictation — treat "Hermes" as canonical). One Hermes deployment is set up **per
+The product is the **Silkroad agent** (working name — the original dictation called it
+"Hermes" / H-E-R-M-E-S; renamed to Silkroad on Aug 13, 2026, see the pivot log in
+[`positioning.md`](./positioning.md) — treat "Silkroad" as canonical). One Silkroad deployment is set up **per
 company, on a dedicated VPS** that we run. The client never sees a server bill or an API
 key — the infrastructure is bundled into the product.
 
-Hermes has two faces:
+Silkroad has two faces:
 
 ### 2a. The always-on background agent
 
-Hermes runs **constantly in the background** on the client's VPS. It responds to the CEO's
+Silkroad runs **constantly in the background** on the client's VPS. It responds to the CEO's
 **iMessages** and **emails** directly — the CEO can just text it or email it and it answers.
 (Voice calling was considered and explicitly cut: no calls. Earlier dictation also floated
 Telegram as a channel; the later, more considered dictation settled on iMessage + email as
@@ -46,7 +47,7 @@ hour, with the agent remembering everything.
 The main visual interface is a **chat**, built by forking **LibreChat** — the fork is
 already copied into our GitHub org and needs to be **stripped down**, removing everything
 unnecessary for this use case. The chat runs on the same underlying model and, critically,
-has the **same shared context as Hermes itself** — chatting on the web, texting via
+has the **same shared context as Silkroad itself** — chatting on the web, texting via
 iMessage, and emailing all hit one brain, one memory.
 
 In the top-right of the interface there is a **toggle between two views**:
@@ -186,7 +187,7 @@ hrs/month/client of care after onboarding), which the skills library must drive 
 
 ## 8. Build order and success criteria (from Plan v2)
 
-Weeks 1–2: one Hermes instance on a VPS for ourselves; wire email + iMessage; hand-write
+Weeks 1–2: one Silkroad instance on a VPS for ourselves; wire email + iMessage; hand-write
 the first three skills (brief, triage, AR-chase); start the private skills repo. Weeks 3–4:
 deploy client #1 via the warm connector with exactly two capabilities live (morning brief +
 AR chasing, draft-only), all guardrails on. Weeks 5–8: let the client's actual asks drive
@@ -225,7 +226,7 @@ Dictation is the source of truth throughout. Specifically:
 3. **Models.** Plan v2 routes everything to Claude models. Dictation says **OpenRouter with
    the cheapest still-capable models (DeepSeek-class)**. → Cheap-capable via OpenRouter is
    the default; the Claude routing table is a benchmark/candidate config only.
-4. **Agent architecture.** Plan v2 insists on one Hermes profile per client with
+4. **Agent architecture.** Plan v2 insists on one Silkroad profile per client with
    capabilities as "skills inside it, not separate agents." Dictation describes **multiple
    specialized agents (finance agent, etc.) sharing context**. → Specialized agents sharing
    one context/brain is the product framing. (Whether they're implemented as separate

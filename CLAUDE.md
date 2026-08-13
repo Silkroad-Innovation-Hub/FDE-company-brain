@@ -3,20 +3,35 @@
 ## Product Context
 
 This repository is the LibreChat fork being stripped down into the web interface for
-**Hermes** — managed AI agents for non-tech-savvy SMBs, deployed per-client on dedicated
+**Silkroad** — managed AI agents for non-tech-savvy SMBs, deployed per-client on dedicated
 VPSes, branded as each client company's own AI, sold to C-suites. All business/product
 context lives in `context/`:
 
 - Start with `context/README.md` (navigation rules and reading order).
-- `context/positioning.md` — current framing and pivot log; newest framing always wins.
-- `context/brief.md` — **source of truth**: the Hermes project brief (dictation-derived;
+- `context/positioning.md` — current framing and pivot log (incl. the Hermes → Silkroad
+  rename); newest framing always wins.
+- `context/brief.md` — **source of truth**: the Silkroad project brief (dictation-derived;
   its Appendix resolves all conflicts with older docs).
+- `context/roadmap.md` — implementation plan + Status sections recording what is already
+  built (config strip, branding, dashboard, to-dos, brain explorer, deep-research specs,
+  subagents).
 - `context/plan.md` — Plan v2 research doc; superseded by the brief wherever they conflict.
 
-The code is currently unmodified upstream LibreChat — infer product direction from
-`context/`, not from the code. Root `CONTEXT.md` is codebase domain language, unrelated to
-product context. Guardrails in `context/brief.md` §6 are non-negotiable when designing
-features. Interface polish is an explicit product requirement — this is sold to executives.
+The build is in progress on top of the fork: model specs
+`silkroad`/`silkroad-brain`/`silkroad-deep` in `librechat.yaml` (Chat / Brain Search /
+Deep Research, switched in place by the composer mode selector
+`client/src/components/Chat/Input/ModeSelector.tsx`), the analytics dashboard and company-brain explorer under
+`client/src/components/Analytics/`, brain API in `packages/api/src/brain/` +
+`api/server/routes/brain.js`, and the demo Obsidian vault in `brain/` (Anduril content —
+swapped per client). Brain ingestion v1 is live per `context/ingestion.md` (spec + Status
+section): every chat message is appended synchronously to the `BrainLog` Mongo raw log via
+a `saveMessage` wrapper in `api/models/index.js`, and a separate distiller process
+(`npm run brain:worker`) runs the tool-less two-model ingestion gate
+(`packages/api/src/brain/{gate,worker}.ts`) — triage kills ephemeral messages, distill
+decides known/merge/create and writes wikilinked vault notes, gated by
+`BRAIN_WRITE_APPROVAL` (default on) behind `/api/brain/approvals`. Root `CONTEXT.md` is codebase domain language, unrelated to product
+context. Guardrails in `context/brief.md` §6 are non-negotiable when designing features.
+Interface polish is an explicit product requirement — this is sold to executives.
 
 ## Project Overview
 

@@ -1,12 +1,17 @@
 # Product Context
 
-This folder holds the **business/product context** for **Hermes** — managed AI agents for
+This folder holds the **business/product context** for **Silkroad** — managed AI agents for
 non-tech-savvy SMBs, deployed per-client, sold to C-suites.
 
-**This repository is the LibreChat fork that becomes the Hermes web interface** (chat +
-analytics/dashboard toggle). It is to be stripped down — everything unnecessary for the
-Hermes use case gets removed. The code is currently unmodified upstream LibreChat; product
-direction lives here in `context/`, not in the code.
+**This repository is the LibreChat fork that becomes the Silkroad web interface** (chat +
+analytics/dashboard toggle). The build is underway — see the Status sections in
+[`roadmap.md`](./roadmap.md) for what already exists: config strip + Silkroad branding,
+chat pinned to OpenAI `gpt-5.5` via three enforced model specs (`silkroad` /
+`silkroad-brain` / `silkroad-deep` — Chat, Brain Search, and Deep Research modes switched
+from a composer mode selector, with seeded specialist subagents), a live to-do stack, the analytics
+dashboard, and the company-brain graph explorer backed by the Obsidian vault in `brain/`
+(currently a demo vault on Anduril — swap per client). Product direction still lives here
+in `context/`, not in the code.
 
 `CONTEXT.md` at the repo root is unrelated: it defines codebase domain language for
 LibreChat engineering work.
@@ -17,7 +22,7 @@ Read in this order:
 
 1. [`positioning.md`](./positioning.md) — the current framing and pivot log. Always read
    first: it records pivots and overrides older framing in other documents.
-2. [`brief.md`](./brief.md) — **the source of truth.** The Hermes project brief: core idea,
+2. [`brief.md`](./brief.md) — **the source of truth.** The Silkroad project brief: core idea,
    product (background agent + LibreChat-fork interface), model layer, GTM, pilot scope,
    guardrails, economics, build order, risks. Its Appendix resolves every conflict with
    Plan v2 (dictation wins).
@@ -26,6 +31,10 @@ Read in this order:
 4. [`plan.md`](./plan.md) — Plan v2 (Aug 10, 2026): the underlying research document.
    Superseded by `brief.md` wherever they conflict; still the detailed reference for
    guardrails, unit economics, VPS spec, and pilot mechanics.
+5. [`ingestion.md`](./ingestion.md) — brain ingestion spec (Aug 13, 2026): raw log vs.
+   curated brain, hot/cold path split, and the selective-ingestion gate. **v1 is
+   implemented in this fork** (Mongo raw log + `npm run brain:worker` distiller — see the
+   spec's Status section for the deviations); migrates to Silkroad core (Track A) later.
 
 ## Rules for agents working in this folder
 

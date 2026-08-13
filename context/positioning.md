@@ -4,7 +4,7 @@
 
 ## The product in one line
 
-**Hermes** (working name): managed AI agents for non-tech-savvy SMBs — specialized per-client
+**Silkroad** (working name): managed AI agents for non-tech-savvy SMBs — specialized per-client
 agents sharing one context/brain, deployed on a dedicated VPS per company, branded as the
 client company's own AI, and sold directly to C-suites via forward-deployed engineering.
 
@@ -17,17 +17,21 @@ pilot plan) wherever it doesn't contradict the brief.
 
 ## Pivot log
 
-- **Aug 13, 2026 (later) — Hermes brief becomes source of truth.** The product is the Hermes
+- **Aug 13, 2026 (latest) — Renamed: Hermes → Silkroad.** The working name changed from
+  Hermes to Silkroad. All product docs, UI branding (wordmark, titles, footer), model specs
+  (`silkroad`, `silkroad-deep`), and code were renamed. The original dictation said
+  "Hermes"; treat **Silkroad** as canonical everywhere from this point.
+- **Aug 13, 2026 (later) — Silkroad brief becomes source of truth.** The product is the Silkroad
   agent: forward-deployed, per-client specialized agents (finance, ops, …) sharing one
   brain, branded as the client's own AI. Key rulings over Plan v2: the chat↔analytics
   dashboard toggle is a **launch feature** (Plan v2 had deferred dashboards); channels are
   **iMessage + email** (WhatsApp dropped for now, no voice calls); models are
   **cheap-capable via OpenRouter (DeepSeek-class)** with the all-Claude table demoted to a
   benchmark; finance tools are **QuickBooks + Mercury**; and **this repository is the
-  LibreChat fork** that gets stripped down into the Hermes web interface. Interface polish
+  LibreChat fork** that gets stripped down into the Silkroad web interface. Interface polish
   ("everything should be beautiful") is an explicit product requirement.
 - **Aug 13, 2026 (earlier) — "Chief of Staff" → "Company Brain".** The anchor moved from an
-  AI chief-of-staff persona to the shared brain / cross-tool synthesis. The Hermes brief
+  AI chief-of-staff persona to the shared brain / cross-tool synthesis. The Silkroad brief
   absorbs and refines this: the brain is the shared context all specialized agents and
   surfaces (web chat, iMessage, email) hit — one brain, one memory.
 

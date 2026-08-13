@@ -58,12 +58,12 @@ purchase for cold-ish prospects.
 |---|---|---|
 | Infra | 1 dedicated VPS per client (spec in §6); Mac Mini on-prem as premium option | Mac Mini = sales story ("your AI lives in your office"), not default — it's an ops liability (residential internet, power, someone unplugs it) |
 | Models | Claude via API, routed through OpenRouter (fallback chains, multi-provider, no custom abstraction code) | Kimi swap deferred — saves ~$2/client/month, not worth a second provider dependency at pilot |
-| Harness | Hermes (one profile per client = the CoS; finance/compliance/etc. are skills inside it, not separate agents) | Multiple profiles only when a client explicitly wants a separately-addressable persona. Never point two agent processes at one profile (memory corruption). |
-| Workflow engine | Hermes native cron for pilot; n8n deferred | Introduce n8n at the first workflow needing deterministic retries/webhooks (social posting, invoice ingestion). Don't run two schedulers per client on day 1. |
+| Harness | Silkroad (one profile per client = the CoS; finance/compliance/etc. are skills inside it, not separate agents) | Multiple profiles only when a client explicitly wants a separately-addressable persona. Never point two agent processes at one profile (memory corruption). |
+| Workflow engine | Silkroad native cron for pilot; n8n deferred | Introduce n8n at the first workflow needing deterministic retries/webhooks (social posting, invoice ingestion). Don't run two schedulers per client on day 1. |
 | Memory/brain | Postgres + pgvector (not Qdrant at pilot scale) | One client's corpus doesn't justify a dedicated vector DB. Graduate to Qdrant when a corpus demands it. External memory provider = how profiles share a brain later. |
 | Connectors (pilot cap: five) | Gmail/Outlook · Google Calendar · Google Drive · QuickBooks/Xero · messaging surface (WhatsApp Cloud API + iMessage via Photon Spectrum) | Cut from pilot: Firecrawl self-hosted, Playwright pool, Reddit/Twitter/review scrapers, Excel MCP, HubSpot/Salesforce/Attio, Monid/Postiz. Each added MCP = a credential, a failure mode, an 11pm debug. Add on paying-client demand; each addition becomes a tap skill so the next client gets it free. |
 | Web research | Hosted search API (Brave/Tavily) + one shared scraping box for all clients if we self-host Firecrawl later | Scraped public pages aren't client data; isolation story survives. Never per-client Firecrawl. |
-| Skills IP | Private GitHub tap (`hermes skills tap add`), versioned; agent-authored skills reviewed then promoted into the tap | This repo is the company's moat. Client #4's fix propagates to #1–3 with a pull. |
+| Skills IP | Private GitHub tap (`silkroad skills tap add`), versioned; agent-authored skills reviewed then promoted into the tap | This repo is the company's moat. Client #4's fix propagates to #1–3 with a pull. |
 
 ### Model routing table (corrected pricing — v1 doc was right, verified Aug 2026)
 
@@ -76,7 +76,7 @@ purchase for cold-ish prospects.
 | Memory upkeep / summarization | Haiku 4.5 | — | |
 | Analysis/charts | Sonnet 5 | — | Owned by main agent |
 
-Prompt caching (cache reads = 10% of input price) is doing real work: Hermes's base context
+Prompt caching (cache reads = 10% of input price) is doing real work: Silkroad's base context
 (SOUL.md + skills list + memory) is identical every call. Keep it stable; don't churn the
 system prompt mid-day.
 
@@ -97,10 +97,10 @@ trust is unrecoverable after one bad autonomous action.
 - **Inbound email is untrusted input.** Triage/classification runs on the cheap model with
   no tool access; content from emails never executes as instructions.
   Weird-instruction-in-email → flag to human, never act.
-- **Container hardening on.** Hermes Docker backend with namespace isolation; inline shell
+- **Container hardening on.** Silkroad Docker backend with namespace isolation; inline shell
   in skills stays off (default) for anything from outside our own tap; community skills are
   never installed on client boxes without review.
-- **Blast-radius caps.** Hermes 90-turn task budget stays on (subagents share it).
+- **Blast-radius caps.** Silkroad 90-turn task budget stays on (subagents share it).
   Per-client monthly token alert at 3× expected. Allowlisted email domains for auto-drafts
   in week 1–2.
 - **Memory write approval on** for the first month per client (prevents the brain learning
@@ -166,9 +166,9 @@ before selling more.
 - **Standard: 4 vCPU / 8GB RAM / 80GB NVMe** — Hetzner US (Ashburn/Hillsboro), ~$8–15/mo
   (DO/Vultr equivalent $24–48; budget line stays $25).
 - CPU is nearly irrelevant (inference is API-side; box idles ~5%). RAM is the constraint,
-  and Chromium is why: Hermes browser tasks spike 0.5–1.5GB. Without headroom, one bad
+  and Chromium is why: Silkroad browser tasks spike 0.5–1.5GB. Without headroom, one bad
   afternoon OOM-kills Postgres mid-conversation — the one failure "always-on" can't have.
-- Runs: Hermes gateway (~0.5GB) + Postgres w/ pgvector (~0.3GB) + OS/Docker (~1GB) +
+- Runs: Silkroad gateway (~0.5GB) + Postgres w/ pgvector (~0.3GB) + OS/Docker (~1GB) +
   browser burst headroom. Add a 2–4GB swapfile as crash cushion.
 - Honest minimum after §3 simplifications (no Qdrant, no n8n, no per-client Firecrawl):
   2 vCPU/4GB (~$5–8) — but the delta is ~$7/mo against a $2,000 retainer. Provision 8GB and
@@ -179,7 +179,7 @@ before selling more.
 
 ## 7. Build order & pilot success criteria
 
-- **Weeks 1–2:** One Hermes instance on a VPS for ourselves. Wire email + WhatsApp/iMessage.
+- **Weeks 1–2:** One Silkroad instance on a VPS for ourselves. Wire email + WhatsApp/iMessage.
   Hand-write 3 skills (brief, triage, AR-chase) to learn the format cold. Start the private
   tap.
 - **Weeks 3–4:** Deploy client #1 (via connector). Exactly two capabilities live: morning

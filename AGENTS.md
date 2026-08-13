@@ -2,12 +2,16 @@ See CLAUDE.md.
 
 ## Product context
 
-This repo is the LibreChat fork becoming the web interface for **Hermes** (managed AI agents
-for non-tech-savvy SMBs). Product context lives in `context/` — start with
-`context/README.md`, then `context/positioning.md` (current framing, always wins) and
-`context/brief.md` (source of truth; `context/plan.md` is superseded research). The code is
-unmodified upstream LibreChat for now; product direction comes from `context/`, not the
-code. Guardrails in `context/brief.md` §6 are non-negotiable.
+This repo is the LibreChat fork becoming the web interface for **Silkroad** (managed AI agents
+for non-tech-savvy SMBs; renamed from Hermes on Aug 13, 2026 — see the pivot log). Product
+context lives in `context/` — start with `context/README.md`, then `context/positioning.md`
+(current framing + pivot log, always wins), `context/brief.md` (source of truth), and
+`context/roadmap.md` (implementation plan + build status; `context/plan.md` is superseded
+research). The build is in progress: `silkroad`/`silkroad-brain`/`silkroad-deep` model
+specs in `librechat.yaml` (switched via the composer mode selector), analytics dashboard +
+brain explorer in `client/src/components/Analytics/`,
+brain API in `packages/api/src/brain/`, demo Obsidian vault in `brain/`. Guardrails in
+`context/brief.md` §6 are non-negotiable.
 
 ## Frontend theming and styling
 
