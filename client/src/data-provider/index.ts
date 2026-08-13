@@ -6,6 +6,8 @@ export * from './Files';
 export * from './Langfuse';
 /* Memories */
 export * from './Memories';
+/* Todos */
+export * from './Todos';
 export * from './Messages';
 export * from './Misc';
 export * from './Projects';
