@@ -466,6 +466,12 @@ export const updateMarketplacePermissions = (roleName: string) =>
   `${getRole(roleName)}/marketplace`;
 export const updateSkillPermissions = (roleName: string) => `${getRole(roleName)}/skills`;
 
+/* Brain */
+export const brainGraph = () => `${BASE_URL}/api/brain/graph`;
+
+export const brainNote = (noteId: string) =>
+  `${BASE_URL}/api/brain/note/${encodeURIComponent(noteId)}`;
+
 /* Todos */
 export const todos = (todoId?: string) =>
   `${BASE_URL}/api/todos${todoId != null && todoId ? `/${encodeURIComponent(todoId)}` : ''}`;

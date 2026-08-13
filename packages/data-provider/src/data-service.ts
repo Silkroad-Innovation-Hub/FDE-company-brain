@@ -1263,6 +1263,15 @@ export function updateSkillPermissions(
   return request.put(endpoints.updateSkillPermissions(variables.roleName), variables.updates);
 }
 
+/* Brain */
+export function getBrainGraph(): Promise<t.TBrainGraph> {
+  return request.get(endpoints.brainGraph());
+}
+
+export function getBrainNote(noteId: string): Promise<t.TBrainNote> {
+  return request.get(endpoints.brainNote(noteId));
+}
+
 /* Todos */
 export function getTodos(): Promise<t.TTodosResponse> {
   return request.get(endpoints.todos());

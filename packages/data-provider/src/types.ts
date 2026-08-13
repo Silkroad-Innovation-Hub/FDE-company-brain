@@ -445,6 +445,36 @@ export type TSharedLinkGetResponse = Omit<TSharedLinkResponse, 'shareId'> & {
   snapshotFiles?: boolean;
 };
 
+export type TBrainGraphNode = {
+  id: string;
+  type: string;
+  degree: number;
+};
+
+export type TBrainGraphLink = {
+  source: string;
+  target: string;
+};
+
+export type TBrainGraph = {
+  nodes: TBrainGraphNode[];
+  links: TBrainGraphLink[];
+  stats: {
+    notes: number;
+    links: number;
+    words: number;
+    types: Record<string, number>;
+  };
+};
+
+export type TBrainNote = {
+  id: string;
+  title: string;
+  type: string;
+  tags: string[];
+  content: string;
+};
+
 export type TTodo = {
   _id: string;
   user: string;
