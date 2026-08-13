@@ -1,5 +1,23 @@
 # LibreChat
 
+## Product Context
+
+This repository is the LibreChat fork being stripped down into the web interface for
+**Hermes** — managed AI agents for non-tech-savvy SMBs, deployed per-client on dedicated
+VPSes, branded as each client company's own AI, sold to C-suites. All business/product
+context lives in `context/`:
+
+- Start with `context/README.md` (navigation rules and reading order).
+- `context/positioning.md` — current framing and pivot log; newest framing always wins.
+- `context/brief.md` — **source of truth**: the Hermes project brief (dictation-derived;
+  its Appendix resolves all conflicts with older docs).
+- `context/plan.md` — Plan v2 research doc; superseded by the brief wherever they conflict.
+
+The code is currently unmodified upstream LibreChat — infer product direction from
+`context/`, not from the code. Root `CONTEXT.md` is codebase domain language, unrelated to
+product context. Guardrails in `context/brief.md` §6 are non-negotiable when designing
+features. Interface polish is an explicit product requirement — this is sold to executives.
+
 ## Project Overview
 
 LibreChat is a monorepo with the following key workspaces:
