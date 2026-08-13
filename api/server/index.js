@@ -339,6 +339,7 @@ const startServer = async () => {
   app.use('/api/permissions', routes.accessPermissions);
 
   app.use('/api/tags', routes.tags);
+  app.use('/api/todos', routes.todos);
   app.use('/api/mcp', routes.mcp);
   app.use('/api/rum', routes.rum);
 
