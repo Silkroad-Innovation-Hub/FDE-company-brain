@@ -167,7 +167,7 @@ export function ARAgingChart() {
 export function ActivityChart() {
   const localize = useLocalize();
   return (
-    <Panel title={localize('com_ui_hermes_activity')} isSample>
+    <Panel title={localize('com_ui_silkroad_activity')} isSample>
       <div className="h-56 text-text-tertiary">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={sampleWeeklyActivity} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>

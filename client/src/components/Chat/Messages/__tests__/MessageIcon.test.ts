@@ -54,7 +54,7 @@ describe('MessageIcon arePropsEqual', () => {
     expect(
       arePropsEqual(
         { iconData: baseIconData, agent: makeAgent({ name: 'Atlas' }) },
-        { iconData: baseIconData, agent: makeAgent({ name: 'Hermes' }) },
+        { iconData: baseIconData, agent: makeAgent({ name: 'Silkroad' }) },
       ),
     ).toBe(false);
   });

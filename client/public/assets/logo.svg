@@ -1,16 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" role="img" aria-label="Hermes">
-  <defs>
-    <linearGradient id="hermes-au" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#C9A96A"/>
-      <stop offset="1" stop-color="#8F6F3F"/>
-    </linearGradient>
-  </defs>
-  <g fill="none" stroke="url(#hermes-au)" stroke-width="3.5" stroke-linecap="round">
-    <path d="M22 14 V50"/>
-    <path d="M46 14 V50"/>
-    <path d="M22 32 H46"/>
-    <path d="M46 32 C54 32 58 28 62 22"/>
-    <path d="M46 32 C54 32 60 33 64 30"/>
-  </g>
-  <text x="84" y="43" font-family="Georgia, 'Times New Roman', serif" font-size="30" letter-spacing="10" fill="url(#hermes-au)">HERMES</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Silkroad">
+  <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAABI1BMVEVMaXFUaXNTZ3FBy0ZSlliwzzMMyEtIWWNzzTyFzTnK0C9EVV9MYGlVanVSZm8jyEepzzSdzzbY0S1KzEOUzThVanVAykNNYWpQYmw4RU1IWWNWa3ZfzD+kzjXX0C2IzTgOxUxBTUlNykHv0SkTyUlWanXazzDM0C7xzyoOykvz0Sn20ChwzDyanjkjykhJy0KJzDcQyEtXykBuzT25pjBIWWRVanVTaHJRZW8RyUoDyUwayUlNYGoLyUspykZizD58zToiykcwykU3ykRDU1xRy0BZzD84Rk49ykNrzD0+TVQyPkbJzy+OzjiWzjafzjXVzy1Dy0JKy0GnzjS/zzC3zzHfzyvx0Snn0CqmlzIjol2Cgji7vjIwlGO7qi87iGgjtVOFSCjzAAAANnRSTlMApGslEP7h/v7+HETG3TBlXd+PSTPvwu8gm4+QlH/vn5DqZcrHgDDfQK/nn7/Hv6+vn9/f36A59WNiAAAACXBIWXMAAAsTAAALEwEAmpwYAAACm0lEQVR42u2UV3PaQBCAhcBU0asNdmyIu50+Er1LYAg2IhS3JP//X2T37iQkkGekPGUyfG/avf2k29sTx+3YseN/5yJRulqtStcXf1eeOHpEVsB10Hn52fl0iYBi+fT0zbEhdjQlLJfTlzFw4nFWf/idAIbX0Ziw7+z9c4A6TsbjwXgAhBzUB/cWi8WcSBKhAcPBJwTje8CCSILc/mAwQhx04d0PhEgSHJcbMWzvIfaAUEcKnoVRn3Bgs94TvweoJI6BEK3vC3ZPcALcU8khifig2gfYa0IwAEyYJEVCBz5KxF4H2+12gEniNBRiAt5OvdvvbxPQ8Yl1Jeur++r1urGLwbcuR+HOj1BJjAWFOmHdxbPSanWVsPyA1h3CJCkW5akgq7/+CC7Z469bi64WW4gm0aIRLC+Xyzn2fI737GVsNd1fFEVpaZIbPZwtE9gsxmDM568wm/2t4UzKsqwomqSgx11UwI4h/gAzeoujsTWcH2czWdYlST3OU4GLPKQmOGOxrLErWgtVVZ3NdIlbT0TKUlmSpDCbFBySlIDKjdkqDodDdS0xZNISgbT9Kx5QgHPBs7gxW5lerzfUJRlDhqyWpAg5aWiw/4ZzicCpeQfdbrfX0yVGAQ/lIMAXFmXscYEK8iZBtNnsdteSgvGOS7hcwi5mVNiekuTyYcAs+NBpIpokaswJIiqgix50qzOrq+2p1TqALkkak6ciwUM/s5exugfRGtLRJSaBJ00EPHdZw3TUSvC5UqnUDBK3KUt6JrrcDVzktfw5eSFXMUjM2RwRpI+rjUajcmx5kxvI2uHdyPPE8LsKWH9AFFMGyfvNBXQT4vPzT+uf42WV0mCSLQGXpwbxjX+jt6rhJVjsM+cKp9NCiNuxY8e/yh8Rc7/U5b6BnQAAAABJRU5ErkJggg==" x="2" y="2" width="60" height="60"/>
 </svg>
