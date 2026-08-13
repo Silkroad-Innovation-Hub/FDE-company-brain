@@ -2,6 +2,8 @@ export * from './app';
 export * from './credentials';
 /* Artifacts */
 export * from './artifacts';
+/* Brain */
+export * from './brain';
 /* Admin */
 export * from './admin';
 export * from './cdn';
