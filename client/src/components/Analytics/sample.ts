@@ -7,7 +7,6 @@ export type OverdueInvoice = { client: string; amount: number; daysOverdue: numb
 export type Payable = { vendor: string; amount: number; dueIn: string };
 export type BankAccount = { name: string; kind: string; balance: number };
 export type ScheduleItem = { time: string; title: string; attendees: string };
-export type Approval = { title: string; detail: string; requestedAt: string };
 export type FeedItem = {
   type: 'sent' | 'drafted' | 'task' | 'indexed' | 'brief' | 'chased';
   text: string;
@@ -86,24 +85,6 @@ export const sampleSchedule: ScheduleItem[] = [
   { time: '11:30', title: 'Henderson renewal call', attendees: 'You + their AP lead' },
   { time: '14:00', title: 'Interview — warehouse manager', attendees: 'You, Dana' },
   { time: '16:30', title: 'Accountant sync', attendees: 'You + CPA' },
-];
-
-export const sampleApprovals: Approval[] = [
-  {
-    title: 'Invoice chase — Henderson & Co',
-    detail: 'Polite reminder, $6,400 overdue 47 days',
-    requestedAt: '18 min ago',
-  },
-  {
-    title: 'Reply — Brightline scope question',
-    detail: 'Drafted answer with updated pricing sheet',
-    requestedAt: '1 hr ago',
-  },
-  {
-    title: 'Invoice chase — Maple Ridge HOA',
-    detail: 'Second notice, $2,600 overdue 94 days',
-    requestedAt: '3 hrs ago',
-  },
 ];
 
 export const sampleFeed: FeedItem[] = [

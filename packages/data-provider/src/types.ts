@@ -492,6 +492,47 @@ export type TTodoRequest = Partial<Omit<TTodo, '_id' | 'user' | 'createdAt' | 'u
 
 export type TTodoDeleteResponse = { deleted: boolean };
 
+export type TApprovalKind = 'email' | 'message' | 'document';
+
+export type TApprovalStatus = 'pending' | 'approved' | 'denied';
+
+export type TApprovalChange = { field: string; before: string; after: string };
+
+export type TApprovalPayload = {
+  to?: string;
+  cc?: string;
+  subject?: string;
+  body?: string;
+  channel?: string;
+  recipient?: string;
+  text?: string;
+  document?: string;
+  summary?: string;
+  changes?: TApprovalChange[];
+};
+
+export type TApproval = {
+  _id: string;
+  user: string;
+  kind: TApprovalKind;
+  title: string;
+  description: string;
+  status: TApprovalStatus;
+  payload: TApprovalPayload;
+  decidedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TApprovalsResponse = TApproval[];
+
+export type TApprovalCreateRequest = Pick<
+  TApproval,
+  'kind' | 'title' | 'description' | 'payload'
+>;
+
+export type TApprovalDecisionRequest = { status: Extract<TApprovalStatus, 'approved' | 'denied'> };
+
 // type for getting conversation tags
 export type TConversationTagsResponse = TConversationTag[];
 // type for creating conversation tag

@@ -33,6 +33,7 @@ const files = require('./files');
 const share = require('./share');
 const tags = require('./tags');
 const todos = require('./todos');
+const approvals = require('./approvals');
 const brain = require('./brain');
 const auth = require('./auth');
 const keys = require('./keys');
@@ -58,6 +59,7 @@ module.exports = {
   user,
   tags,
   todos,
+  approvals,
   brain,
   roles,
   oauth,

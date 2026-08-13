@@ -476,6 +476,12 @@ export const brainNote = (noteId: string) =>
 export const todos = (todoId?: string) =>
   `${BASE_URL}/api/todos${todoId != null && todoId ? `/${encodeURIComponent(todoId)}` : ''}`;
 
+/* Approvals */
+export const approvals = (approvalId?: string) =>
+  `${BASE_URL}/api/approvals${
+    approvalId != null && approvalId ? `/${encodeURIComponent(approvalId)}` : ''
+  }`;
+
 /* Conversation Tags */
 export const conversationTags = (tag?: string) =>
   `${BASE_URL}/api/tags${tag != null && tag ? `/${encodeURIComponent(tag)}` : ''}`;

@@ -3,6 +3,7 @@ import { createSkillSyncStatusModel } from './skillSyncStatus';
 import { createConversationTagModel } from './conversationTag';
 import { createTodoModel } from './todo';
 import { createBrainLogModel } from './brainLog';
+import { createApprovalModel } from './approval';
 import { createAgentCategoryModel } from './agentCategory';
 import { createChatProjectModel } from './chatProject';
 import { createAgentApiKeyModel } from './agentApiKey';
@@ -72,6 +73,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
   ConversationTag: ReturnType<typeof createConversationTagModel>;
   Todo: ReturnType<typeof createTodoModel>;
   BrainLog: ReturnType<typeof createBrainLogModel>;
+  Approval: ReturnType<typeof createApprovalModel>;
   SharedLink: ReturnType<typeof createSharedLinkModel>;
   ToolCall: ReturnType<typeof createToolCallModel>;
   MemoryEntry: ReturnType<typeof createMemoryModel>;
@@ -113,6 +115,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
     ConversationTag: createConversationTagModel(mongoose),
     Todo: createTodoModel(mongoose),
     BrainLog: createBrainLogModel(mongoose),
+    Approval: createApprovalModel(mongoose),
     SharedLink: createSharedLinkModel(mongoose),
     ToolCall: createToolCallModel(mongoose),
     MemoryEntry: createMemoryModel(mongoose),

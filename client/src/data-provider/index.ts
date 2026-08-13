@@ -8,6 +8,8 @@ export * from './Langfuse';
 export * from './Memories';
 /* Todos */
 export * from './Todos';
+/* Approvals */
+export * from './Approvals';
 /* Brain */
 export * from './Brain';
 export * from './Messages';

@@ -1289,6 +1289,22 @@ export function deleteTodo(todoId: string): Promise<t.TTodoDeleteResponse> {
   return request.delete(endpoints.todos(todoId));
 }
 
+/* Approvals */
+export function getApprovals(): Promise<t.TApprovalsResponse> {
+  return request.get(endpoints.approvals());
+}
+
+export function createApproval(payload: t.TApprovalCreateRequest): Promise<t.TApproval> {
+  return request.post(endpoints.approvals(), payload);
+}
+
+export function decideApproval(
+  approvalId: string,
+  payload: t.TApprovalDecisionRequest,
+): Promise<t.TApproval> {
+  return request.put(endpoints.approvals(approvalId), payload);
+}
+
 /* Tags */
 export function getConversationTags(): Promise<t.TConversationTagsResponse> {
   return request.get(endpoints.conversationTags());

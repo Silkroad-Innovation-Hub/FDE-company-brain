@@ -1,7 +1,6 @@
 import {
   Sun,
   Send,
-  Clock,
   Inbox,
   Landmark,
   PenLine,
@@ -17,7 +16,6 @@ import {
   samplePayables,
   formatCurrency,
   sampleSchedule,
-  sampleApprovals,
   sampleBrainIndex,
   sampleBankAccounts,
   sampleOverdueInvoices,
@@ -122,30 +120,6 @@ export function Schedule() {
           </li>
         ))}
       </ul>
-    </Panel>
-  );
-}
-
-export function Approvals() {
-  const localize = useLocalize();
-  return (
-    <Panel title={localize('com_ui_awaiting_approval')} isSample>
-      <ul className="flex flex-col divide-y divide-border-light">
-        {sampleApprovals.map((approval) => (
-          <li key={approval.title} className="flex items-start gap-3 py-2.5">
-            <PenLine className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-text-primary">{approval.title}</p>
-              <p className="truncate text-xs text-text-tertiary">{approval.detail}</p>
-            </div>
-            <span className="flex shrink-0 items-center gap-1 text-xs text-text-tertiary">
-              <Clock className="h-3 w-3" aria-hidden="true" />
-              {approval.requestedAt}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="text-xs text-text-tertiary">{localize('com_ui_approve_in_chat')}</p>
     </Panel>
   );
 }

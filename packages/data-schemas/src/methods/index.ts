@@ -52,6 +52,7 @@ export type {
   BrainLogResolution,
   BrainLogClaimOptions,
 } from './brainLog';
+import { createApprovalMethods, type ApprovalMethods } from './approval';
 import { createMessageMethods, type MessageMethods } from './message';
 import { createConversationMethods, type ConversationMethods } from './conversation';
 import { createChatProjectMethods, type ChatProjectMethods } from './chatProject';
@@ -182,6 +183,7 @@ export type AllMethods = UserMethods &
   ConversationTagMethods &
   TodoMethods &
   BrainLogMethods &
+  ApprovalMethods &
   MessageMethods &
   ConversationMethods &
   ChatProjectMethods &
@@ -319,6 +321,7 @@ export function createMethods(
     ...createConversationTagMethods(mongoose),
     ...createTodoMethods(mongoose),
     ...createBrainLogMethods(mongoose),
+    ...createApprovalMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
     ...createChatProjectMethods(mongoose),
@@ -367,6 +370,7 @@ export type {
   ConversationTagMethods,
   TodoMethods,
   BrainLogMethods,
+  ApprovalMethods,
   MessageMethods,
   ConversationMethods,
   ChatProjectMethods,
