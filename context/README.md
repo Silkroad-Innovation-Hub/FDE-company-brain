@@ -21,7 +21,9 @@ Read in this order:
    product (background agent + LibreChat-fork interface), model layer, GTM, pilot scope,
    guardrails, economics, build order, risks. Its Appendix resolves every conflict with
    Plan v2 (dictation wins).
-3. [`plan.md`](./plan.md) — Plan v2 (Aug 10, 2026): the underlying research document.
+3. [`roadmap.md`](./roadmap.md) — the implementation plan (Aug 13, 2026): tracks, phases,
+   milestones, and open decisions, grounded in this codebase.
+4. [`plan.md`](./plan.md) — Plan v2 (Aug 10, 2026): the underlying research document.
    Superseded by `brief.md` wherever they conflict; still the detailed reference for
    guardrails, unit economics, VPS spec, and pilot mechanics.
 
