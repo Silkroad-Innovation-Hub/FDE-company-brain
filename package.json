@@ -40,6 +40,7 @@
     "backend": "cross-env NODE_ENV=production node api/server/index.js",
     "backend:inspect": "cross-env NODE_ENV=production node --inspect --expose-gc api/server/index.js",
     "backend:dev": "cross-env NODE_ENV=development npx nodemon api/server/index.js",
+    "brain:worker": "node config/brain-worker.js",
     "redis:single": "bash scripts/redis-mode.sh single",
     "redis:cluster": "bash scripts/redis-mode.sh cluster",
     "redis:stop": "bash scripts/redis-mode.sh stop",

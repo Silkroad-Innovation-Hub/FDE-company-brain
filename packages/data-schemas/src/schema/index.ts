@@ -27,6 +27,13 @@ export { default as toolCallSchema } from './toolCall';
 export { default as transactionSchema } from './transaction';
 export { default as userSchema } from './user';
 export { default as memorySchema } from './memory';
+export type {
+  IBrainLog,
+  BrainLogStatus,
+  BrainLogOutcome,
+  BrainLogSurface,
+  BrainLogDirection,
+} from './brainLog';
 export { default as toolFavoriteSchema } from './favorite';
 export { default as groupSchema } from './group';
 export { default as systemGrantSchema } from './systemGrant';

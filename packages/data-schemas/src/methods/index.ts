@@ -45,6 +45,13 @@ import { createPresetMethods, type PresetMethods } from './preset';
 /* Tier 2 — Moderate (service deps injected) */
 import { createConversationTagMethods, type ConversationTagMethods } from './conversationTag';
 import { createTodoMethods, type TodoMethods } from './todo';
+import { createBrainLogMethods, type BrainLogMethods } from './brainLog';
+export type {
+  BrainLogLean,
+  BrainLogAppendData,
+  BrainLogResolution,
+  BrainLogClaimOptions,
+} from './brainLog';
 import { createMessageMethods, type MessageMethods } from './message';
 import { createConversationMethods, type ConversationMethods } from './conversation';
 import { createChatProjectMethods, type ChatProjectMethods } from './chatProject';
@@ -174,6 +181,7 @@ export type AllMethods = UserMethods &
   PresetMethods &
   ConversationTagMethods &
   TodoMethods &
+  BrainLogMethods &
   MessageMethods &
   ConversationMethods &
   ChatProjectMethods &
@@ -310,6 +318,7 @@ export function createMethods(
     /* Tier 2 */
     ...createConversationTagMethods(mongoose),
     ...createTodoMethods(mongoose),
+    ...createBrainLogMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
     ...createChatProjectMethods(mongoose),
@@ -357,6 +366,7 @@ export type {
   PresetMethods,
   ConversationTagMethods,
   TodoMethods,
+  BrainLogMethods,
   MessageMethods,
   ConversationMethods,
   ChatProjectMethods,

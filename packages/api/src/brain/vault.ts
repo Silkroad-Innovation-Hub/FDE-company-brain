@@ -139,6 +139,24 @@ export function buildBrainGraph(notes: BrainNoteMeta[]): BrainGraph {
   };
 }
 
+export interface BrainNoteWrite {
+  id: string;
+  type: string;
+  tags?: string[];
+  content: string;
+}
+
+export async function writeBrainNote(vaultPath: string, note: BrainNoteWrite): Promise<boolean> {
+  if (!isSafeNoteId(note.id)) {
+    return false;
+  }
+  const tags = (note.tags ?? []).join(', ');
+  const frontmatter = `---\ntype: ${note.type}\ntags: [${tags}]\n---\n\n`;
+  const body = note.content.replace(FRONTMATTER_PATTERN, '');
+  await fs.writeFile(path.join(vaultPath, `${note.id}.md`), frontmatter + body.trim() + '\n');
+  return true;
+}
+
 export async function readBrainNote(vaultPath: string, noteId: string): Promise<BrainNote | null> {
   if (!isSafeNoteId(noteId)) {
     return null;
