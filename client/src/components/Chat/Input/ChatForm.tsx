@@ -47,6 +47,7 @@ import TokenUsage from './TokenUsage';
 import StopButton from './StopButton';
 import SendButton from './SendButton';
 import EditBadges from './EditBadges';
+import ModeSelector from './ModeSelector';
 import BadgeRow from './BadgeRow';
 import Mention from './Mention';
 import store from '~/store';
@@ -668,6 +669,7 @@ const ChatForm = memo(function ChatForm({
                     Array.isArray(conversation?.messages) && conversation.messages.length >= 1
                   }
                 />
+                <ModeSelector />
                 <div className="mx-auto flex" />
                 <TokenUsage index={index} conversation={conversation} isSubmitting={isSubmitting} />
                 {SpeechToText && (

@@ -2289,5 +2289,11 @@
   "com_ui_brain_title": "Company brain — {{0}}",
   "com_ui_brain_subtitle": "{{0}} notes · {{1}} connections · {{2}} words indexed, growing with every conversation",
   "com_ui_brain_search": "Search notes",
-  "com_ui_deep_research": "Deep research"
+  "com_ui_deep_research": "Deep research",
+  "com_ui_mode_chat": "Chat",
+  "com_ui_mode_chat_desc": "Everyday questions and quick answers",
+  "com_ui_mode_brain_search": "Brain search",
+  "com_ui_mode_brain_search_desc": "Answers from your company's knowledge",
+  "com_ui_deep_research_desc": "In-depth reports on complex questions",
+  "com_ui_mode_selector": "Chat mode"
 }

@@ -5,7 +5,6 @@ import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-
 import ModelSelector from './Menus/Endpoints/ModelSelector';
 import { useGetStartupConfig } from '~/data-provider';
 import { ViewToggle } from '~/components/Analytics';
-import DeepResearchToggle from './DeepResearchToggle';
 import ExportAndShareMenu from './ExportAndShareMenu';
 import { OpenSidebar, PresetsMenu } from './Menus';
 import BookmarkMenu from './Menus/BookmarkMenu';
@@ -65,7 +64,6 @@ function Header() {
                     isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
                   />
                   {hasAccessToTemporaryChat === true && <TemporaryChat />}
-                  <DeepResearchToggle />
                   <ViewToggle current="chat" />
                 </>
               )}
@@ -79,7 +77,6 @@ function Header() {
               isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
             />
             {hasAccessToTemporaryChat === true && <TemporaryChat />}
-            <DeepResearchToggle />
             <ViewToggle current="chat" />
           </div>
         )}
