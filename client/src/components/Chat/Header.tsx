@@ -4,6 +4,7 @@ import { useMediaQuery } from '@librechat/client';
 import { getConfigDefaults, PermissionTypes, Permissions } from 'librechat-data-provider';
 import ModelSelector from './Menus/Endpoints/ModelSelector';
 import { useGetStartupConfig } from '~/data-provider';
+import { ViewToggle } from '~/components/Analytics';
 import ExportAndShareMenu from './ExportAndShareMenu';
 import { OpenSidebar, PresetsMenu } from './Menus';
 import BookmarkMenu from './Menus/BookmarkMenu';
@@ -63,6 +64,7 @@ function Header() {
                     isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
                   />
                   {hasAccessToTemporaryChat === true && <TemporaryChat />}
+                  <ViewToggle current="chat" />
                 </>
               )}
             </div>
@@ -75,6 +77,7 @@ function Header() {
               isSharedButtonEnabled={startupConfig?.sharedLinksEnabled ?? false}
             />
             {hasAccessToTemporaryChat === true && <TemporaryChat />}
+            <ViewToggle current="chat" />
           </div>
         )}
       </div>

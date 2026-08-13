@@ -31,6 +31,11 @@ const AuthLayout = () => (
   </AuthContextProvider>
 );
 
+const loadAnalyticsView = () =>
+  import('~/components/Analytics').then((m) => ({
+    Component: m.AnalyticsView,
+  }));
+
 const loadInlinePromptsView = () =>
   import('~/components/Prompts/layouts/InlinePromptsView').then((m) => ({
     Component: m.default,
@@ -133,6 +138,10 @@ export const router = createBrowserRouter(
             {
               path: 'search',
               element: <Search />,
+            },
+            {
+              path: 'analytics',
+              lazy: loadAnalyticsView,
             },
             {
               path: 'prompts',
