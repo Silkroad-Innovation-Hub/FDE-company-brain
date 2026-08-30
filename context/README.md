@@ -35,6 +35,10 @@ Read in this order:
    curated brain, hot/cold path split, and the selective-ingestion gate. **v1 is
    implemented in this fork** (Mongo raw log + `npm run brain:worker` distiller — see the
    spec's Status section for the deviations); migrates to Silkroad core (Track A) later.
+6. [`channels.md`](./channels.md) — channels spec (Aug 30, 2026): how iMessage and email
+   feed the raw log and answer the owner, on top of ingestion v1. **Implemented in this
+   fork** (`npm run channel:imessage`, `npm run channel:gmail`; see its Status section —
+   Gmail awaits OAuth credentials for a live run).
 
 ## Rules for agents working in this folder
 

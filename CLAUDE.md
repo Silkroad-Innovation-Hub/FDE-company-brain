@@ -29,7 +29,12 @@ a `saveMessage` wrapper in `api/models/index.js`, and a separate distiller proce
 (`npm run brain:worker`) runs the tool-less two-model ingestion gate
 (`packages/api/src/brain/{gate,worker}.ts`) — triage kills ephemeral messages, distill
 decides known/merge/create and writes wikilinked vault notes, gated by
-`BRAIN_WRITE_APPROVAL` (default on) behind `/api/brain/approvals`. Root `CONTEXT.md` is codebase domain language, unrelated to product
+`BRAIN_WRITE_APPROVAL` (default on) behind `/api/brain/approvals`. Channels per
+`context/channels.md` (spec + Status): `packages/api/src/channels/` holds the shared append /
+kill-switch / owner-Q&A helpers and the iMessage (`chat.db` polling, `npm run
+channel:imessage`) and Gmail (`@googleapis/gmail`, `npm run channel:gmail`) connectors, both
+dumb raw-log appends with triage/to-dos/injection-flagging in the worker; `PUT
+/api/approvals/:id` sends/deletes Gmail drafts on approve/deny. Root `CONTEXT.md` is codebase domain language, unrelated to product
 context. Guardrails in `context/brief.md` §6 are non-negotiable when designing features.
 Interface polish is an explicit product requirement — this is sold to executives.
 

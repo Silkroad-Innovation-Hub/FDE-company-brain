@@ -99,6 +99,14 @@ architecture is exactly the spec; the substrate differs:
   Actions/approvals panel. `off` auto-applies (dogfood mode).
 - Verified end-to-end Aug 13: chat message about a $250k Vannevar Labs pilot → complete
   wikilinked vault note; a venting message → `skipped (ephemeral)`, raw log only.
+- **Aug 30 update ([`channels.md`](./channels.md))**: iMessage and email now feed the same
+  raw log. The scope deviation above is narrowed: `direction` now means human-authored
+  (`inbound`, incl. the owner's own sent texts/mail) vs agent-authored (`outbound`), so
+  everything a human wrote is distilled. The gate takes a source header (surface, author,
+  subject), triage also returns `actionItems` (written as to-dos, approval-gated) and
+  `injection` (parked as `flagged`, never distilled), and bulk mail/SMS is logged
+  pre-resolved as `bulk` without a model call. A `ChannelState` pause flag halts the worker
+  and every responder.
 
 ## What this spec originally assumed (kept for the Track A migration)
 

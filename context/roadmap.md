@@ -41,6 +41,11 @@ separate worker process, so replies never wait on ingestion.
   Photon Spectrum (per Plan v2), BlueBubbles on a Mac mini relay, or a hosted relay.
   **Open decision D1** — resolve before week 2.
 
+  **Status (Aug 30, 2026):** built in the fork — see [`channels.md`](./channels.md). iMessage
+  via `chat.db` polling on a Mac (D1 still open; transport isolated in one module), Gmail via
+  the Gmail API with owner-only replies and a draft→approval→send hook. Both connectors are
+  dumb raw-log appends; triage/to-dos/injection-flagging run in the distiller worker.
+
 **A4. Cron workflows (week 2–3).** Morning brief at 7am (triaged inbox, calendar, tasks,
 cash snapshot → iMessage). Weekly AR-chase: QuickBooks aging (read-only) → draft chase
 emails → approval via iMessage tap → send.
