@@ -2,7 +2,14 @@ const path = require('path');
 const express = require('express');
 const { logger } = require('@librechat/data-schemas');
 const { loadVault, buildBrainGraph, readBrainNote, applyBrainApproval } = require('@librechat/api');
-const { listBrainLogs, getBrainLog, resolveBrainLog, countBrainLogsByStatus } = require('~/models');
+const {
+  listBrainLogs,
+  getBrainLog,
+  resolveBrainLog,
+  countBrainLogsByStatus,
+  getTodos,
+  createTodo,
+} = require('~/models');
 const { requireJwtAuth } = require('~/server/middleware');
 
 const router = express.Router();
@@ -14,7 +21,7 @@ const CACHE_TTL_MS = 30_000;
 let graphCache = null;
 let graphCacheAt = 0;
 
-const brainLogMethods = { getBrainLog, resolveBrainLog };
+const brainLogMethods = { getBrainLog, resolveBrainLog, getTodos, createTodo };
 
 router.use(requireJwtAuth);
 

@@ -1,6 +1,6 @@
-import type { BrainLogLean, BrainLogResolution } from '@librechat/data-schemas';
+import type { BrainLogLean, BrainLogResolution, TodoLean } from '@librechat/data-schemas';
+import type { BrainGate, BrainSource, TriageResult } from './gate';
 import type { BrainNoteMeta } from './vault';
-import type { BrainGate } from './gate';
 import { loadVault, readBrainNote, writeBrainNote } from './vault';
 
 export interface BrainWorkerLogger {
@@ -21,6 +21,8 @@ export interface BrainWorkerMethods {
   ) => Promise<BrainLogLean | null>;
   requeueStaleBrainLogs: (staleMs: number) => Promise<number>;
   getBrainLog: (brainLogId: string) => Promise<BrainLogLean | null>;
+  getTodos: (user: string) => Promise<TodoLean[]>;
+  createTodo: (user: string, data: { text: string; position?: number }) => Promise<TodoLean>;
 }
 
 export interface BrainWorkerDeps {
@@ -31,19 +33,92 @@ export interface BrainWorkerDeps {
   logger: BrainWorkerLogger;
   claim?: { limit?: number; quietMs?: number; maxAttempts?: number };
   maxAttempts?: number;
+  /** Kill switch: when it resolves true the worker leaves the queue untouched. */
+  isPaused?: () => Promise<boolean>;
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3;
 const STALE_PROCESSING_MS = 10 * 60_000;
+
+export function sourceOf(entry: BrainLogLean): BrainSource {
+  return {
+    surface: entry.surface,
+    direction: entry.direction,
+    sender: entry.sender,
+    subject: entry.subject,
+  };
+}
+
+/**
+ * Writes the action items triage found, skipping ones already open. Returns
+ * the texts actually created so the log entry records them.
+ */
+export async function applyTodoItems(
+  methods: Pick<BrainWorkerMethods, 'getTodos' | 'createTodo'>,
+  user: string,
+  items: string[],
+): Promise<string[]> {
+  if (items.length === 0) {
+    return [];
+  }
+  const existing = await methods.getTodos(user);
+  const open = new Set(
+    existing.filter((todo) => !todo.done).map((todo) => todo.text.trim().toLowerCase()),
+  );
+  let position = existing.reduce((max, todo) => Math.max(max, todo.position), 0);
+  const created: string[] = [];
+  for (const text of items) {
+    if (open.has(text.toLowerCase())) {
+      continue;
+    }
+    position += 1;
+    await methods.createTodo(user, { text, position });
+    open.add(text.toLowerCase());
+    created.push(text);
+  }
+  return created;
+}
+
+async function resolveTodos(
+  deps: BrainWorkerDeps,
+  entry: BrainLogLean,
+  triage: TriageResult,
+): Promise<Pick<BrainLogResolution, 'todoItems'>> {
+  if (triage.actionItems.length === 0) {
+    return {};
+  }
+  if (deps.approvalRequired) {
+    return { todoItems: triage.actionItems };
+  }
+  const created = await applyTodoItems(deps.methods, entry.user, triage.actionItems);
+  return created.length > 0 ? { todoItems: created } : {};
+}
 
 async function distillEntry(
   deps: BrainWorkerDeps,
   entry: BrainLogLean,
   index: BrainNoteMeta[],
 ): Promise<BrainLogResolution> {
-  const triage = await deps.gate.triage(entry.text, index);
+  const source = sourceOf(entry);
+  const triage = await deps.gate.triage(entry.text, index, source);
+  if (triage.injection) {
+    return {
+      status: 'skipped',
+      outcome: 'flagged',
+      reason: triage.reason || 'Content contains instructions addressed to an AI',
+    };
+  }
+
+  const todos = await resolveTodos(deps, entry, triage);
+  const pendingTodos = deps.approvalRequired && todos.todoItems != null;
+
   if (triage.verdict === 'ephemeral') {
-    return { status: 'skipped', outcome: 'ephemeral', reason: triage.reason };
+    return {
+      status: pendingTodos ? 'awaiting_approval' : 'skipped',
+      outcome: 'ephemeral',
+      reason: triage.reason,
+      ...todos,
+    };
   }
 
   const related = (
@@ -53,10 +128,16 @@ async function distillEntry(
     entry.text,
     index,
     related.map((note) => ({ id: note.id, content: note.content })),
+    source,
   );
 
   if (distilled.action === 'known') {
-    return { status: 'skipped', outcome: 'known', reason: distilled.reason };
+    return {
+      status: pendingTodos ? 'awaiting_approval' : 'skipped',
+      outcome: 'known',
+      reason: distilled.reason,
+      ...todos,
+    };
   }
 
   const exists = index.some((note) => note.id === distilled.noteId);
@@ -67,6 +148,7 @@ async function distillEntry(
     noteType: distilled.noteType,
     noteContent: distilled.noteContent,
     reason: distilled.reason,
+    ...todos,
   } as const;
 
   if (deps.approvalRequired) {
@@ -89,6 +171,9 @@ async function distillEntry(
  * the queue was empty. Failures retry until maxAttempts, then park as failed.
  */
 export async function runBrainWorkerOnce(deps: BrainWorkerDeps): Promise<number> {
+  if (deps.isPaused && (await deps.isPaused())) {
+    return 0;
+  }
   await deps.methods.requeueStaleBrainLogs(STALE_PROCESSING_MS);
   const maxAttempts = deps.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
   const entries = await deps.methods.claimPendingBrainLogs({ maxAttempts, ...deps.claim });
@@ -147,27 +232,36 @@ export function startBrainWorker(
 }
 
 /**
- * Applies an approved memory write to the vault. Used by the approval route;
- * returns the updated entry, or null when the entry is not awaiting approval.
+ * Applies an approved memory write — the note proposal and/or the extracted
+ * to-dos — to the vault and to-do stack. Used by the approval route; returns
+ * the updated entry, or null when the entry is not awaiting approval.
  */
 export async function applyBrainApproval(
   deps: Pick<BrainWorkerDeps, 'methods' | 'vaultPath'>,
   brainLogId: string,
 ): Promise<BrainLogLean | null> {
   const entry = await deps.methods.getBrainLog(brainLogId);
-  if (!entry || entry.status !== 'awaiting_approval' || !entry.noteId || !entry.noteContent) {
+  if (!entry || entry.status !== 'awaiting_approval') {
     return null;
   }
-  const written = await writeBrainNote(deps.vaultPath, {
-    id: entry.noteId,
-    type: entry.noteType ?? 'note',
-    content: entry.noteContent,
-  });
-  if (!written) {
-    return deps.methods.resolveBrainLog(brainLogId, {
-      status: 'failed',
-      reason: `Unsafe note id: ${entry.noteId}`,
-    });
+  const hasNote = Boolean(entry.noteId && entry.noteContent);
+  const todoItems = entry.todoItems ?? [];
+  if (!hasNote && todoItems.length === 0) {
+    return null;
   }
-  return deps.methods.resolveBrainLog(brainLogId, { status: 'applied' });
+  if (hasNote) {
+    const written = await writeBrainNote(deps.vaultPath, {
+      id: entry.noteId as string,
+      type: entry.noteType ?? 'note',
+      content: entry.noteContent as string,
+    });
+    if (!written) {
+      return deps.methods.resolveBrainLog(brainLogId, {
+        status: 'failed',
+        reason: `Unsafe note id: ${entry.noteId}`,
+      });
+    }
+  }
+  const created = await applyTodoItems(deps.methods, entry.user, todoItems);
+  return deps.methods.resolveBrainLog(brainLogId, { status: 'applied', todoItems: created });
 }

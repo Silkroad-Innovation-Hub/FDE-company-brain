@@ -21,7 +21,18 @@ const quietMs = parseMs(process.env.BRAIN_QUIET_MS, 15_000);
     triageModel: process.env.BRAIN_TRIAGE_MODEL,
     distillModel: process.env.BRAIN_DISTILL_MODEL,
   });
-  const deps = { methods, gate, vaultPath, approvalRequired, claim: { quietMs }, logger };
+  const ownerEmail = process.env.SILKROAD_USER_EMAIL;
+  const owner = ownerEmail ? await methods.findUser({ email: ownerEmail }, '_id') : null;
+  const isPaused = owner ? () => methods.isChannelsPaused(String(owner._id)) : undefined;
+  const deps = {
+    methods,
+    gate,
+    vaultPath,
+    approvalRequired,
+    claim: { quietMs },
+    logger,
+    isPaused,
+  };
   if (process.env.BRAIN_WORKER_ONCE === 'true') {
     let processed;
     do {
