@@ -66,6 +66,45 @@ describe('appendBrainLog', () => {
   });
 });
 
+describe('appendBrainLog — channel provenance', () => {
+  it('stores sender/subject and inserts pre-resolved bulk entries outside the queue', async () => {
+    const entry = await methods.appendBrainLog(userId, {
+      surface: 'email',
+      direction: 'inbound',
+      messageId: 'gmail-1',
+      conversationId: 'thread-1',
+      text: 'Weekly newsletter',
+      sender: 'news@example.com',
+      subject: 'This week',
+      resolution: { status: 'skipped', outcome: 'bulk', reason: 'Bulk mail' },
+    });
+    expect(entry).toMatchObject({
+      surface: 'email',
+      sender: 'news@example.com',
+      subject: 'This week',
+      status: 'skipped',
+      outcome: 'bulk',
+    });
+    expect(entry?.processedAt).toBeInstanceOf(Date);
+    expect(await methods.claimPendingBrainLogs({ quietMs: 0 })).toHaveLength(0);
+  });
+
+  it('records flagged outcomes and to-do items on resolution', async () => {
+    const entry = await methods.appendBrainLog(userId, inbound('m1', 'do X by Friday'));
+    const resolved = await methods.resolveBrainLog(String(entry?._id), {
+      status: 'awaiting_approval',
+      outcome: 'ephemeral',
+      todoItems: ['Do X by Friday'],
+    });
+    expect(resolved?.todoItems).toEqual(['Do X by Friday']);
+    const flagged = await methods.resolveBrainLog(String(entry?._id), {
+      status: 'skipped',
+      outcome: 'flagged',
+    });
+    expect(flagged?.outcome).toBe('flagged');
+  });
+});
+
 describe('claimPendingBrainLogs', () => {
   it('claims only inbound pending entries older than the quiet window', async () => {
     await methods.appendBrainLog(userId, inbound('m1', 'durable fact'));

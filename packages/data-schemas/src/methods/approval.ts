@@ -24,6 +24,7 @@ export function createApprovalMethods(mongoose: typeof import('mongoose')): {
     approvalId: string,
     status: Extract<ApprovalStatus, 'approved' | 'denied'>,
   ) => Promise<ApprovalLean | null>;
+  reopenApproval: (user: string, approvalId: string) => Promise<ApprovalLean | null>;
 } {
   const getApprovalModel = (): Model<IApprovalDocument> =>
     mongoose.models.Approval as Model<IApprovalDocument>;
@@ -61,7 +62,18 @@ export function createApprovalMethods(mongoose: typeof import('mongoose')): {
       .lean<ApprovalLean>();
   }
 
-  return { getApprovals, createApproval, decideApproval };
+  /** Returns a decided approval to pending when its side effect (e.g. sending a draft) failed. */
+  async function reopenApproval(user: string, approvalId: string): Promise<ApprovalLean | null> {
+    return getApprovalModel()
+      .findOneAndUpdate(
+        { _id: approvalId, user, status: { $ne: 'pending' } },
+        { $set: { status: 'pending' }, $unset: { decidedAt: '' } },
+        { new: true },
+      )
+      .lean<ApprovalLean>();
+  }
+
+  return { getApprovals, createApproval, decideApproval, reopenApproval };
 }
 
 export type ApprovalMethods = ReturnType<typeof createApprovalMethods>;

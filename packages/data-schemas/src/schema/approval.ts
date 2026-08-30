@@ -20,6 +20,8 @@ export interface IApprovalPayload {
   document?: string;
   summary?: string;
   changes?: IApprovalChange[];
+  /** Gmail draft created for an email approval; sent on approve, deleted on deny. */
+  draftId?: string;
 }
 
 export interface IApproval {
@@ -58,6 +60,7 @@ const payload = new Schema<IApprovalPayload>(
     document: { type: String },
     summary: { type: String },
     changes: { type: [change], default: undefined },
+    draftId: { type: String },
   },
   { _id: false },
 );

@@ -34,6 +34,8 @@ export type {
   BrainLogSurface,
   BrainLogDirection,
 } from './brainLog';
+export type { IChannelState } from './channelState';
+export type { IApproval, IApprovalPayload, ApprovalKind, ApprovalStatus } from './approval';
 export { default as toolFavoriteSchema } from './favorite';
 export { default as groupSchema } from './group';
 export { default as systemGrantSchema } from './systemGrant';

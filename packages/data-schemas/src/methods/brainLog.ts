@@ -10,21 +10,26 @@ import type {
 
 export type BrainLogLean = FlattenMaps<IBrainLog> & { _id: Types.ObjectId };
 
-export interface BrainLogAppendData {
-  surface: BrainLogSurface;
-  direction: BrainLogDirection;
-  conversationId?: string;
-  messageId: string;
-  text: string;
-}
-
 export interface BrainLogResolution {
   status: BrainLogStatus;
   outcome?: BrainLogOutcome;
   noteId?: string;
   noteType?: string;
   noteContent?: string;
+  todoItems?: string[];
   reason?: string;
+}
+
+export interface BrainLogAppendData {
+  surface: BrainLogSurface;
+  direction: BrainLogDirection;
+  conversationId?: string;
+  messageId: string;
+  text: string;
+  sender?: string;
+  subject?: string;
+  /** Pre-resolved on insert (e.g. bulk mail logged but never triaged). */
+  resolution?: BrainLogResolution;
 }
 
 export interface BrainLogClaimOptions {
@@ -60,6 +65,10 @@ export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
     user: string,
     data: BrainLogAppendData,
   ): Promise<BrainLogLean | null> {
+    const { resolution } = data;
+    const preResolved = resolution
+      ? { ...resolution, processedAt: new Date() }
+      : { status: 'pending' as const };
     return getBrainLogModel()
       .findOneAndUpdate(
         { messageId: data.messageId },
@@ -67,14 +76,16 @@ export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
           $set: {
             text: data.text,
             conversationId: data.conversationId,
+            sender: data.sender,
+            subject: data.subject,
           },
           $setOnInsert: {
             user,
             surface: data.surface,
             direction: data.direction,
             messageId: data.messageId,
-            status: 'pending',
             attempts: 0,
+            ...preResolved,
           },
         },
         { upsert: true, new: true },

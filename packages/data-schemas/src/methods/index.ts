@@ -45,6 +45,7 @@ import { createPresetMethods, type PresetMethods } from './preset';
 /* Tier 2 — Moderate (service deps injected) */
 import { createConversationTagMethods, type ConversationTagMethods } from './conversationTag';
 import { createTodoMethods, type TodoMethods } from './todo';
+export type { TodoLean, TodoCreateData } from './todo';
 import { createBrainLogMethods, type BrainLogMethods } from './brainLog';
 export type {
   BrainLogLean,
@@ -52,7 +53,10 @@ export type {
   BrainLogResolution,
   BrainLogClaimOptions,
 } from './brainLog';
+import { createChannelStateMethods, type ChannelStateMethods } from './channelState';
+export type { ChannelStateLean } from './channelState';
 import { createApprovalMethods, type ApprovalMethods } from './approval';
+export type { ApprovalLean, ApprovalCreateData } from './approval';
 import { createMessageMethods, type MessageMethods } from './message';
 import { createConversationMethods, type ConversationMethods } from './conversation';
 import { createChatProjectMethods, type ChatProjectMethods } from './chatProject';
@@ -183,6 +187,7 @@ export type AllMethods = UserMethods &
   ConversationTagMethods &
   TodoMethods &
   BrainLogMethods &
+  ChannelStateMethods &
   ApprovalMethods &
   MessageMethods &
   ConversationMethods &
@@ -321,6 +326,7 @@ export function createMethods(
     ...createConversationTagMethods(mongoose),
     ...createTodoMethods(mongoose),
     ...createBrainLogMethods(mongoose),
+    ...createChannelStateMethods(mongoose),
     ...createApprovalMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
@@ -370,6 +376,7 @@ export type {
   ConversationTagMethods,
   TodoMethods,
   BrainLogMethods,
+  ChannelStateMethods,
   ApprovalMethods,
   MessageMethods,
   ConversationMethods,

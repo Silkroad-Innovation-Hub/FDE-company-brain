@@ -9,10 +9,11 @@ export type BrainLogStatus =
   | 'rejected'
   | 'failed';
 
-export type BrainLogOutcome = 'ephemeral' | 'known' | 'merge' | 'create';
+export type BrainLogOutcome = 'ephemeral' | 'known' | 'merge' | 'create' | 'flagged' | 'bulk';
 
 export type BrainLogSurface = 'chat' | 'email' | 'imessage';
 
+/** `inbound` = authored by a human (owner or third party); `outbound` = authored by the agent. */
 export type BrainLogDirection = 'inbound' | 'outbound';
 
 export interface IBrainLog {
@@ -22,11 +23,14 @@ export interface IBrainLog {
   conversationId?: string;
   messageId: string;
   text: string;
+  sender?: string;
+  subject?: string;
   status: BrainLogStatus;
   outcome?: BrainLogOutcome;
   noteId?: string;
   noteType?: string;
   noteContent?: string;
+  todoItems?: string[];
   reason?: string;
   attempts: number;
   processedAt?: Date;
@@ -67,6 +71,12 @@ const brainLog: Schema<IBrainLogDocument> = new Schema<IBrainLogDocument>(
       type: String,
       required: true,
     },
+    sender: {
+      type: String,
+    },
+    subject: {
+      type: String,
+    },
     status: {
       type: String,
       enum: [
@@ -82,7 +92,7 @@ const brainLog: Schema<IBrainLogDocument> = new Schema<IBrainLogDocument>(
     },
     outcome: {
       type: String,
-      enum: ['ephemeral', 'known', 'merge', 'create'],
+      enum: ['ephemeral', 'known', 'merge', 'create', 'flagged', 'bulk'],
     },
     noteId: {
       type: String,
@@ -92,6 +102,10 @@ const brainLog: Schema<IBrainLogDocument> = new Schema<IBrainLogDocument>(
     },
     noteContent: {
       type: String,
+    },
+    todoItems: {
+      type: [String],
+      default: undefined,
     },
     reason: {
       type: String,
