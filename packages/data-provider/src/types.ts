@@ -105,6 +105,8 @@ export type TEphemeralAgent = {
   mcp?: string[];
   web_search?: boolean;
   file_search?: boolean;
+  /** Equip the ephemeral agent with the company-brain `brain_search` tool. */
+  brain_search?: boolean;
   execute_code?: boolean;
   artifacts?: string;
   skills?: boolean;
@@ -528,10 +530,7 @@ export type TApproval = {
 
 export type TApprovalsResponse = TApproval[];
 
-export type TApprovalCreateRequest = Pick<
-  TApproval,
-  'kind' | 'title' | 'description' | 'payload'
->;
+export type TApprovalCreateRequest = Pick<TApproval, 'kind' | 'title' | 'description' | 'payload'>;
 
 export type TApprovalDecisionRequest = { status: Extract<TApprovalStatus, 'approved' | 'denied'> };
 

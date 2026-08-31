@@ -327,6 +327,25 @@ export const fileSearchSchema: ExtendedJsonSchema = {
   required: ['query'],
 };
 
+/** Brain Search tool JSON schema */
+export const brainSearchSchema: ExtendedJsonSchema = {
+  type: 'object',
+  properties: {
+    query: {
+      type: 'string',
+      description:
+        'What to look up in the company brain: a person, company, deal, program, number, decision, or something the owner said recently. Be specific.',
+    },
+    scope: {
+      type: 'string',
+      enum: ['brain', 'recent', 'all'],
+      description:
+        "'brain' searches only the curated notes; 'recent' searches only recent messages across chat, iMessage and email; 'all' (default) searches both.",
+    },
+  },
+  required: ['query'],
+};
+
 /** Tool definitions registry - maps tool names to their definitions */
 export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
   google: {
@@ -398,6 +417,14 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
     description:
       'Performs semantic search across attached "file_search" documents using natural language queries. This tool analyzes the content of uploaded files to find relevant information, quotes, and passages that best match your query.',
     schema: fileSearchSchema,
+    toolType: 'builtin',
+    responseFormat: 'content_and_artifact',
+  },
+  brain_search: {
+    name: 'brain_search',
+    description:
+      'Searches the company brain — the curated notes and recent messages across chat, iMessage and email. Returns numbered hits with [[Note Title]] citations for notes and sender/date provenance for messages.',
+    schema: brainSearchSchema,
     toolType: 'builtin',
     responseFormat: 'content_and_artifact',
   },

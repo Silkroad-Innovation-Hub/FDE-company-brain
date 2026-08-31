@@ -51,6 +51,8 @@ export type TModelSpec = {
   hideBadgeRow?: boolean;
   webSearch?: boolean;
   fileSearch?: boolean;
+  /** Equip the spec's ephemeral agent with the company-brain `brain_search` tool. */
+  brainSearch?: boolean;
   executeCode?: boolean;
   memory?: boolean;
   /** Equip the spec's ephemeral agent with the `ask_user_question` HITL tool. */
@@ -108,6 +110,7 @@ export const tModelSpecSchema = z.object({
   hideBadgeRow: z.boolean().optional(),
   webSearch: z.boolean().optional(),
   fileSearch: z.boolean().optional(),
+  brainSearch: z.boolean().optional(),
   executeCode: z.boolean().optional(),
   memory: z.boolean().optional(),
   askUserQuestion: z.boolean().optional(),

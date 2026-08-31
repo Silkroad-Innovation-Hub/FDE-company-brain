@@ -55,6 +55,7 @@ const {
 } = require('~/server/services/MCP');
 const { getMCPRequestContext } = require('~/server/services/MCPRequestContext');
 const { createFileSearchTool, primeFiles: primeSearchFiles } = require('./fileSearch');
+const { createBrainSearchTool } = require('./brainSearch');
 const { primeFiles: primeCodeFiles } = require('~/server/services/Files/Code/process');
 const { getUserPluginAuthValue } = require('~/server/services/PluginService');
 const { loadAuthValues } = require('~/server/services/Tools/credentials');
@@ -389,6 +390,13 @@ const loadTools = async ({
           fileCitations,
         });
       };
+      continue;
+    } else if (tool === Tools.brain_search) {
+      requestedTools[tool] = async () =>
+        createBrainSearchTool({
+          userId: user,
+          retriever: options.req?.app?.locals?.brainRetriever,
+        });
       continue;
     } else if (tool === Tools.web_search) {
       const result = await loadWebSearchAuth({

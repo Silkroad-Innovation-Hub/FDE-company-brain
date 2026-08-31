@@ -50,3 +50,37 @@ describe('loadEphemeralAgent ephemeral id stability (#14253 Bug 2)', () => {
     expect(a).toEqual(b);
   });
 });
+
+describe('loadEphemeralAgent brain_search equipping', () => {
+  const specReq = {
+    user: { id: 'user-1' },
+    config: {
+      modelSpecs: {
+        list: [
+          { name: 'brain-spec', label: 'Brain', brainSearch: true },
+          { name: 'plain-spec', label: 'Plain' },
+        ],
+      },
+    },
+    body: {},
+  } as unknown as Parameters<typeof loadEphemeralAgent>[0]['req'];
+
+  async function toolsFor(spec: string, ephemeralAgent?: Record<string, unknown>) {
+    const agent = await loadEphemeralAgent(
+      {
+        req: { ...specReq, body: { ephemeralAgent } } as typeof specReq,
+        spec,
+        endpoint: 'openAI',
+        model_parameters: { model: 'gpt-5.5' } as never,
+      },
+      deps,
+    );
+    return agent?.tools ?? [];
+  }
+
+  test('equips brain_search from the spec flag or the ephemeral toggle only', async () => {
+    expect(await toolsFor('brain-spec')).toContain('brain_search');
+    expect(await toolsFor('plain-spec')).not.toContain('brain_search');
+    expect(await toolsFor('plain-spec', { brain_search: true })).toContain('brain_search');
+  });
+});

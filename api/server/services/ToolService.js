@@ -522,6 +522,7 @@ async function processRequiredActions(client, requiredActions) {
 const nativeTools = new Set([
   Tools.execute_code,
   Tools.file_search,
+  Tools.brain_search,
   Tools.web_search,
   Tools.memory,
 ]);

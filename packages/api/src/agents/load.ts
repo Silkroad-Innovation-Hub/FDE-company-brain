@@ -77,6 +77,9 @@ export async function loadEphemeralAgent(
   if (ephemeralAgent?.file_search === true || modelSpec?.fileSearch === true) {
     tools.push(Tools.file_search);
   }
+  if (ephemeralAgent?.brain_search === true || modelSpec?.brainSearch === true) {
+    tools.push(Tools.brain_search);
+  }
   if (ephemeralAgent?.web_search === true || modelSpec?.webSearch === true) {
     tools.push(Tools.web_search);
   }

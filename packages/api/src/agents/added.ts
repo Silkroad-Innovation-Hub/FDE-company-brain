@@ -102,6 +102,7 @@ export async function loadAddedAgent(
       mcp?: string[];
       execute_code?: boolean;
       file_search?: boolean;
+      brain_search?: boolean;
       web_search?: boolean;
       artifacts?: unknown;
       memory?: boolean;
@@ -120,6 +121,7 @@ export async function loadAddedAgent(
         mcp?: string[];
         execute_code?: boolean;
         file_search?: boolean;
+        brain_search?: boolean;
         web_search?: boolean;
         artifacts?: unknown;
         memory?: boolean;
@@ -201,6 +203,9 @@ export async function loadAddedAgent(
   }
   if (ephemeralAgent?.file_search === true || modelSpec?.fileSearch === true) {
     tools.push(Tools.file_search);
+  }
+  if (ephemeralAgent?.brain_search === true || modelSpec?.brainSearch === true) {
+    tools.push(Tools.brain_search);
   }
   if (ephemeralAgent?.web_search === true || modelSpec?.webSearch === true) {
     tools.push(Tools.web_search);
