@@ -6,6 +6,8 @@ export interface BrainNoteMeta {
   title: string;
   type: string;
   tags: string[];
+  /** Every simple `key: value` frontmatter line, raw string values (e.g. invoice amount/due). */
+  fields?: Record<string, string>;
   links: string[];
   sections: string[];
   facts: string[];
@@ -41,6 +43,7 @@ export interface BrainNote {
   title: string;
   type: string;
   tags: string[];
+  fields?: Record<string, string>;
   content: string;
 }
 
@@ -53,12 +56,26 @@ const FACT_LABEL_LIMIT = 42;
 interface Frontmatter {
   type: string;
   tags: string[];
+  fields: Record<string, string>;
+}
+
+const FIELD_PATTERN = /^([A-Za-z][\w-]*):\s*(.*?)\s*$/;
+
+function parseFields(frontmatter: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const line of frontmatter.split('\n')) {
+    const match = line.match(FIELD_PATTERN);
+    if (match) {
+      fields[match[1]] = match[2].replace(/^['"](.*)['"]$/, '$1');
+    }
+  }
+  return fields;
 }
 
 function parseFrontmatter(content: string): { meta: Frontmatter; body: string } {
   const match = content.match(FRONTMATTER_PATTERN);
   if (!match) {
-    return { meta: { type: 'note', tags: [] }, body: content };
+    return { meta: { type: 'note', tags: [], fields: {} }, body: content };
   }
   const typeMatch = match[1].match(/^type:\s*(\S+)/m);
   const tagsMatch = match[1].match(/^tags:\s*\[([^\]]*)\]/m);
@@ -69,7 +86,7 @@ function parseFrontmatter(content: string): { meta: Frontmatter; body: string } 
         .filter(Boolean)
     : [];
   return {
-    meta: { type: typeMatch ? typeMatch[1] : 'note', tags },
+    meta: { type: typeMatch ? typeMatch[1] : 'note', tags, fields: parseFields(match[1]) },
     body: content.slice(match[0].length),
   };
 }
@@ -183,6 +200,7 @@ async function readVault(vaultPath: string): Promise<BrainNoteMeta[]> {
         title: id,
         type: meta.type,
         tags: meta.tags,
+        fields: meta.fields,
         links: extractWikilinks(body),
         sections: extractSections(body),
         facts: extractFacts(body),
@@ -283,5 +301,12 @@ export async function readBrainNote(vaultPath: string, noteId: string): Promise<
     return null;
   }
   const { meta, body } = parseFrontmatter(content);
-  return { id: noteId, title: noteId, type: meta.type, tags: meta.tags, content: body };
+  return {
+    id: noteId,
+    title: noteId,
+    type: meta.type,
+    tags: meta.tags,
+    fields: meta.fields,
+    content: body,
+  };
 }

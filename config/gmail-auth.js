@@ -10,7 +10,7 @@ const http = require('http');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const { auth } = require('@googleapis/gmail');
-const { GMAIL_SCOPES } = require('@librechat/api');
+const { GMAIL_SCOPES, CALENDAR_SCOPE } = require('@librechat/api');
 
 const PORT = Number(process.env.GMAIL_AUTH_PORT) || 53682;
 const REDIRECT = `http://127.0.0.1:${PORT}/`;
@@ -33,7 +33,7 @@ const client = new auth.OAuth2(
 const url = client.generateAuthUrl({
   access_type: 'offline',
   prompt: 'consent',
-  scope: GMAIL_SCOPES,
+  scope: [...GMAIL_SCOPES, CALENDAR_SCOPE],
 });
 
 const server = http.createServer(async (req, res) => {

@@ -6,6 +6,7 @@ export * from './artifacts';
 export * from './brain';
 export * from './channels';
 export * from './guardrails';
+export * from './workflows';
 /* Admin */
 export * from './admin';
 export * from './cdn';
