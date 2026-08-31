@@ -1,10 +1,14 @@
 import type { ChannelStateLean } from '@librechat/data-schemas';
+import type { RecordAuditEntry } from './audit';
+import { createChannelAudit, ownerActor } from './audit';
 
 export type PauseCommand = 'pause' | 'resume';
 
 export interface PauseMethods {
   isChannelsPaused: (user: string) => Promise<boolean>;
   setChannelsPaused: (user: string, paused: boolean, via: string) => Promise<ChannelStateLean>;
+  /** Present on the full `createMethods` object; kill-switch flips are audited when available. */
+  recordAuditEntry?: RecordAuditEntry;
 }
 
 const PAUSE_PHRASES = new Set(['pause everything', 'pause', 'silkroad pause']);
@@ -39,7 +43,7 @@ export const RESUME_ACK = 'Resumed.';
  * acknowledgement to send back, or null when the text was not a command.
  */
 export async function handlePauseCommand(
-  methods: Pick<PauseMethods, 'setChannelsPaused'>,
+  methods: Pick<PauseMethods, 'setChannelsPaused' | 'recordAuditEntry'>,
   user: string,
   text: string,
   via: string,
@@ -49,5 +53,12 @@ export async function handlePauseCommand(
     return null;
   }
   await methods.setChannelsPaused(user, command === 'pause', via);
+  const audit = createChannelAudit(methods.recordAuditEntry);
+  await audit(command === 'pause' ? 'channel.paused' : 'channel.resumed', {
+    actor: ownerActor(user),
+    target: { type: 'channels', id: user },
+    severity: command === 'pause' ? 'warning' : 'info',
+    metadata: { via },
+  });
   return command === 'pause' ? PAUSE_ACK : RESUME_ACK;
 }

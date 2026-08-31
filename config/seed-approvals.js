@@ -13,8 +13,8 @@ const approvals = [
     title: 'Invoice chase — Henderson & Co',
     description: 'Polite reminder, $6,400 overdue 47 days',
     payload: {
-      to: 'accounts@hendersonco.com',
-      cc: 'you@yourcompany.com',
+      to: 'accounts@henderson.example.com',
+      cc: 'you@example.com',
       subject: 'Friendly reminder: Invoice #1082 — $6,400 past due',
       body: [
         'Hi Marcus,',
@@ -58,7 +58,7 @@ const approvals = [
     title: 'Second notice — Maple Ridge HOA',
     description: 'Firmer follow-up, $2,600 overdue 94 days',
     payload: {
-      to: 'treasurer@mapleridgehoa.org',
+      to: 'treasurer@mapleridge.example.com',
       subject: 'Second notice: Invoice #1044 — $2,600 outstanding (94 days)',
       body: [
         'Hello Patricia,',

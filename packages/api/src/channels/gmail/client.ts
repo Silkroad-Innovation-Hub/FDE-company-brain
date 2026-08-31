@@ -1,7 +1,8 @@
 import { gmail, auth } from '@googleapis/gmail';
 import type { gmail_v1 } from '@googleapis/gmail';
 import type { GmailMessage } from './parse';
-import { AGENT_HEADER, extractAddress } from './parse';
+import type { DraftPolicy } from '~/channels/policy';
+import { AGENT_HEADER, extractAddress, extractAddresses } from './parse';
 
 /** Read-only inbox plus drafts/send — never `gmail.modify` (brief §6: read-only by default). */
 export const GMAIL_SCOPES = [
@@ -25,6 +26,7 @@ export interface GmailHistorySync {
 
 export interface GmailOutgoing {
   to: string;
+  cc?: string;
   subject: string;
   text: string;
   threadId?: string;
@@ -39,9 +41,16 @@ export interface GmailApi {
   getMessage: (id: string) => Promise<GmailMessage>;
   /** Owner-only: throws `RecipientNotOwnerError` for any other address. */
   sendReply: (reply: GmailOutgoing) => Promise<string>;
+  /** Policy-guarded: throws `RecipientNotAllowedError` before any API call. */
   createDraft: (draft: GmailOutgoing) => Promise<string>;
   sendDraft: (draftId: string) => Promise<string>;
   deleteDraft: (draftId: string) => Promise<void>;
+  getDraftRecipients: (draftId: string) => Promise<GmailDraftRecipients>;
+}
+
+export interface GmailDraftRecipients {
+  to: string[];
+  cc: string[];
 }
 
 export interface GmailClientConfig {
@@ -49,6 +58,8 @@ export interface GmailClientConfig {
   clientSecret: string;
   refreshToken: string;
   ownerEmail: string;
+  /** Draft-domain allowlist (context/unification.md §3.2); drafts are refused without one. */
+  policy?: DraftPolicy;
 }
 
 const RECENT_QUERY = 'newer_than:2d -in:spam -in:trash';
@@ -70,6 +81,7 @@ function encodeSubject(subject: string): string {
 export function buildRawMessage(message: GmailOutgoing): string {
   const lines = [
     `To: ${message.to}`,
+    ...(message.cc ? [`Cc: ${message.cc}`] : []),
     `Subject: ${encodeSubject(message.subject)}`,
     `${AGENT_HEADER}: 1`,
     'MIME-Version: 1.0',
@@ -152,6 +164,10 @@ export function createGmailClient(config: GmailClientConfig): GmailApi {
   }
 
   async function createDraft(draft: GmailOutgoing): Promise<string> {
+    if (!config.policy) {
+      throw new Error('Gmail drafts require a draft policy (SILKROAD_DRAFT_DOMAINS)');
+    }
+    config.policy.assertRecipientsAllowed({ to: draft.to, cc: draft.cc });
     const { data } = await api.users.drafts.create({
       userId,
       requestBody: { message: { raw: buildRawMessage(draft), threadId: draft.threadId } },
@@ -168,6 +184,14 @@ export function createGmailClient(config: GmailClientConfig): GmailApi {
     await api.users.drafts.delete({ userId, id: draftId });
   }
 
+  async function getDraftRecipients(draftId: string): Promise<GmailDraftRecipients> {
+    const { data } = await api.users.drafts.get({ userId, id: draftId, format: 'metadata' });
+    const headers = data.message?.payload?.headers ?? [];
+    const value = (name: string): string | undefined =>
+      headers.find((h) => h.name?.toLowerCase() === name)?.value ?? undefined;
+    return { to: extractAddresses(value('to')), cc: extractAddresses(value('cc')) };
+  }
+
   return {
     getProfile,
     listHistory,
@@ -177,5 +201,6 @@ export function createGmailClient(config: GmailClientConfig): GmailApi {
     createDraft,
     sendDraft,
     deleteDraft,
+    getDraftRecipients,
   };
 }

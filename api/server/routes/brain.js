@@ -1,7 +1,14 @@
 const path = require('path');
 const express = require('express');
 const { logger } = require('@librechat/data-schemas');
-const { loadVault, buildBrainGraph, readBrainNote, applyBrainApproval } = require('@librechat/api');
+const {
+  loadVault,
+  ownerActor,
+  buildBrainGraph,
+  readBrainNote,
+  applyBrainApproval,
+  createChannelAudit,
+} = require('@librechat/api');
 const {
   listBrainLogs,
   getBrainLog,
@@ -9,6 +16,7 @@ const {
   countBrainLogsByStatus,
   getTodos,
   createTodo,
+  recordAuditEntry,
 } = require('~/models');
 const { requireJwtAuth } = require('~/server/middleware');
 
@@ -22,6 +30,20 @@ let graphCache = null;
 let graphCacheAt = 0;
 
 const brainLogMethods = { getBrainLog, resolveBrainLog, getTodos, createTodo };
+
+function auditWrite(req, action, entry, outcome) {
+  const audit = createChannelAudit(recordAuditEntry, { tenantId: req.user.tenantId });
+  return audit(action, {
+    actor: ownerActor(req.user.id, req.user.email || 'owner'),
+    target: { type: 'note', id: entry.noteId || undefined, name: entry.noteId || undefined },
+    outcome,
+    metadata: {
+      brainLogId: String(entry._id),
+      outcome: entry.outcome ?? null,
+      hasTodos: Array.isArray(entry.todoItems) && entry.todoItems.length > 0,
+    },
+  });
+}
 
 router.use(requireJwtAuth);
 
@@ -69,13 +91,14 @@ router.post('/approvals/:brainLogId/approve', async (req, res) => {
       return res.status(404).json({ error: 'Approval not found' });
     }
     const applied = await applyBrainApproval(
-      { methods: brainLogMethods, vaultPath },
+      { methods: brainLogMethods, vaultPath, retriever: req.app.locals.brainRetriever, logger },
       req.params.brainLogId,
     );
     if (!applied) {
       return res.status(409).json({ error: 'Entry is not awaiting approval' });
     }
     graphCacheAt = 0;
+    await auditWrite(req, 'brain.write_applied', applied, 'success');
     res.status(200).json(applied);
   } catch (error) {
     logger.error('Error approving brain write:', error);
@@ -90,6 +113,7 @@ router.post('/approvals/:brainLogId/reject', async (req, res) => {
       return res.status(404).json({ error: 'Approval not found' });
     }
     const rejected = await resolveBrainLog(req.params.brainLogId, { status: 'rejected' });
+    await auditWrite(req, 'brain.write_rejected', rejected ?? entry, 'denied');
     res.status(200).json(rejected);
   } catch (error) {
     logger.error('Error rejecting brain write:', error);

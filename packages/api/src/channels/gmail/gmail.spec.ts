@@ -1,11 +1,23 @@
 import { promises as fs } from 'fs';
+import { GatewayError } from '~/channels/remote';
 import os from 'os';
 import path from 'path';
-import type { BrainLogLean, BrainLogAppendData, ChannelStateLean } from '@librechat/data-schemas';
+import type {
+  BrainLogLean,
+  BrainLogAppendData,
+  ChannelStateLean,
+  ChannelNoticeLean,
+} from '@librechat/data-schemas';
 import type { GmailApi, GmailOutgoing, GmailProfile } from './client';
 import type { GmailPollDeps, GmailPollState } from './poll';
 import type { GmailMessage, GmailHeader } from './parse';
-import { HistoryExpiredError, assertOwnerRecipient, buildRawMessage } from './client';
+import { RecipientNotAllowedError, createDraftPolicy } from '~/channels/policy';
+import {
+  HistoryExpiredError,
+  assertOwnerRecipient,
+  buildRawMessage,
+  createGmailClient,
+} from './client';
 import { ThreadMemory, initialState, isOwnerQuestion, processMail, syncOnce } from './poll';
 import { htmlToText, parseGmailMessage, stripQuotedHistory } from './parse';
 
@@ -196,6 +208,33 @@ describe('client guards', () => {
     expect(raw).toContain('X-Silkroad-Agent: 1');
     expect(raw).toContain('References: <z@x> <a@x>');
     expect(raw.endsWith('\r\n\r\nbody')).toBe(true);
+    const withCc = Buffer.from(
+      buildRawMessage({ to: OWNER, cc: 'cc@example.com', subject: 's', text: 'b' }),
+      'base64url',
+    ).toString('utf8');
+    expect(withCc).toContain('Cc: cc@example.com');
+  });
+
+  it('refuses to create drafts outside the allowlist before touching the API', async () => {
+    const client = createGmailClient({
+      clientId: 'id',
+      clientSecret: 'secret',
+      refreshToken: 'token',
+      ownerEmail: OWNER,
+      policy: createDraftPolicy({ ownerEmail: OWNER, allowedDomains: ['acme.com'] }),
+    });
+    await expect(
+      client.createDraft({ to: 'x@evil.io', subject: 's', text: 'b' }),
+    ).rejects.toBeInstanceOf(RecipientNotAllowedError);
+    const unguarded = createGmailClient({
+      clientId: 'id',
+      clientSecret: 'secret',
+      refreshToken: 'token',
+      ownerEmail: OWNER,
+    });
+    await expect(unguarded.createDraft({ to: OWNER, subject: 's', text: 'b' })).rejects.toThrow(
+      /draft policy/,
+    );
   });
 });
 
@@ -259,6 +298,7 @@ function fakeMailbox(initial: GmailMessage[]): FakeMailbox {
       createDraft: async () => 'draft-1',
       sendDraft: async () => 'sent-draft-1',
       deleteDraft: async () => undefined,
+      getDraftRecipients: async () => ({ to: [], cc: [] }),
     },
   };
   return box;
@@ -266,6 +306,7 @@ function fakeMailbox(initial: GmailMessage[]): FakeMailbox {
 
 function fakeMethods() {
   const log = new Map<string, BrainLogLean>();
+  const notices: ChannelNoticeLean[] = [];
   let paused = false;
   const appendBrainLog = jest.fn(async (user: string, data: BrainLogAppendData) => {
     const existing = log.get(data.messageId);
@@ -299,6 +340,35 @@ function fakeMethods() {
         return { paused: value } as unknown as ChannelStateLean;
       },
       getTodos: async () => [],
+      claimChannelNotices: async () => {
+        const pending = notices.filter((n) => n.status === 'pending');
+        for (const notice of pending) {
+          notice.status = 'delivering';
+          notice.attempts += 1;
+        }
+        return pending;
+      },
+      resolveChannelNotice: async (id: string, outcome: { delivered: boolean; via: string }) => {
+        const notice = notices.find((n) => String(n._id) === id) ?? null;
+        if (notice) {
+          notice.status = outcome.delivered ? 'delivered' : 'pending';
+          notice.deliveredVia = outcome.delivered ? outcome.via : undefined;
+        }
+        return notice;
+      },
+    },
+    notices,
+    addNotice: (text: string) => {
+      const notice = {
+        _id: `n${notices.length + 1}`,
+        user: 'u1',
+        kind: 'budget',
+        text,
+        status: 'pending',
+        attempts: 0,
+      } as unknown as ChannelNoticeLean;
+      notices.push(notice);
+      return notice;
     },
   };
 }
@@ -426,6 +496,49 @@ describe('gmail poller', () => {
     expect(memory.history('thread-q1')).toHaveLength(2);
   });
 
+  it('answers through the gateway when one is configured and stays silent when it is paused', async () => {
+    const q = message({
+      id: 'g1',
+      from: `Owner <${OWNER}>`,
+      to: OWNER,
+      subject: 'Henderson?',
+      text: 'How much does Henderson owe?',
+    });
+    const box = fakeMailbox([q]);
+    const { deps: d, chat } = deps(box);
+    const gateway = {
+      answer: jest.fn(async () => ({
+        text: 'Gateway says $12,400.',
+        conversationId: 'c1',
+        messageId: 'm1',
+        truncated: false,
+      })),
+    };
+    const mail = parseGmailMessage(q)!;
+    expect(await processMail({ ...d, gateway }, mail, new ThreadMemory())).toBe('answered');
+    expect(gateway.answer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        surface: 'email',
+        externalThreadId: 'thread-g1',
+        question: 'How much does Henderson owe?',
+        subject: 'Henderson?',
+        format: 'plain',
+      }),
+    );
+    expect(box.sent[0].text).toBe('Gateway says $12,400.');
+    expect(chat).not.toHaveBeenCalled();
+
+    const paused = {
+      answer: jest.fn(async () => {
+        throw new GatewayError('paused', 'paused', 423);
+      }),
+    };
+    const box2 = fakeMailbox([q]);
+    const { deps: d2 } = deps(box2);
+    expect(await processMail({ ...d2, gateway: paused }, mail, new ThreadMemory())).toBe('paused');
+    expect(box2.sent).toHaveLength(0);
+  });
+
   it('treats a "Silkroad:" subject as a question even with other recipients, but not plain outbound mail', () => {
     const tagged = parseGmailMessage(
       message({
@@ -517,6 +630,33 @@ describe('gmail poller', () => {
     expect(store.get()).toEqual({ historyId: '500' });
     expect(fake.log.has('gmail-r1')).toBe(true);
     expect(d.logger.warn).toHaveBeenCalled();
+  });
+
+  it('emails pending notices to the owner once and retries failed sends', async () => {
+    const box = fakeMailbox([]);
+    const { deps: d, fake } = deps(box);
+    fake.addNotice('Silkroad spend this month is $131 — 2.6× the expected $50.');
+    await syncOnce(d, { historyId: '100' }, new ThreadMemory());
+    expect(box.sent).toHaveLength(1);
+    expect(box.sent[0]).toMatchObject({ to: OWNER, subject: 'Silkroad notice' });
+    expect(box.sent[0].text).toContain('$131');
+    expect(fake.notices[0]).toMatchObject({ status: 'delivered', deliveredVia: 'email' });
+
+    await syncOnce(d, { historyId: box.historyId }, new ThreadMemory());
+    expect(box.sent).toHaveLength(1);
+
+    const failing = fake.addNotice('second');
+    const original = box.api.sendReply;
+    box.api.sendReply = async () => {
+      throw new Error('smtp down');
+    };
+    await syncOnce(d, { historyId: box.historyId }, new ThreadMemory());
+    expect(failing.status).toBe('pending');
+    expect(d.logger.error).toHaveBeenCalled();
+    box.api.sendReply = original;
+    await syncOnce(d, { historyId: box.historyId }, new ThreadMemory());
+    expect(failing.status).toBe('delivered');
+    expect(box.sent).toHaveLength(2);
   });
 
   it('starts at the current history on first run and backfills when asked', async () => {
