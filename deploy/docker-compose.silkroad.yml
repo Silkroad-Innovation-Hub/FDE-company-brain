@@ -1,0 +1,70 @@
+# One Silkroad client on one VPS: API + brain worker + Gmail connector + Mongo.
+# The iMessage connector runs on a Mac (Messages.app) and points SILKROAD_API_URL at this host.
+#
+#   cd deploy && docker compose -f docker-compose.silkroad.yml up -d --build
+#
+# Reads ../.env (secrets, SILKROAD_*), ../librechat.yaml (specs), ../brain (vault).
+# MONGO_URI / HOST / BRAIN_VAULT_PATH are pinned below so the container values win over .env.
+
+x-silkroad: &silkroad
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: silkroad:local
+  restart: unless-stopped
+  env_file:
+    - ../.env
+  environment:
+    - HOST=0.0.0.0
+    - MONGO_URI=mongodb://mongodb:27017/silkroad
+    - BRAIN_VAULT_PATH=/app/brain
+    - SILKROAD_LOOPBACK_URL=http://127.0.0.1:3080
+    - SILKROAD_API_URL=http://api:3080
+  volumes:
+    - ../librechat.yaml:/app/librechat.yaml:ro
+    - ../brain:/app/brain
+    - ../logs:/app/logs
+    - ../uploads:/app/uploads
+    - silkroad-data:/app/data
+  depends_on:
+    - mongodb
+
+services:
+  api:
+    <<: *silkroad
+    container_name: silkroad-api
+    ports:
+      - "${PORT:-3080}:3080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3080/api/health/silkroad"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    <<: *silkroad
+    container_name: silkroad-worker
+    command: ["node", "config/brain-worker.js"]
+    depends_on:
+      - mongodb
+      - api
+
+  gmail:
+    <<: *silkroad
+    container_name: silkroad-gmail
+    command: ["node", "config/channel-gmail.js"]
+    depends_on:
+      - mongodb
+      - api
+
+  mongodb:
+    container_name: silkroad-mongodb
+    image: mongo:8.0.20
+    restart: unless-stopped
+    command: mongod --noauth --bind_ip_all
+    volumes:
+      - silkroad-mongo:/data/db
+
+volumes:
+  silkroad-mongo:
+  silkroad-data:

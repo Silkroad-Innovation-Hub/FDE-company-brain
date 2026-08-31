@@ -21,6 +21,7 @@ const {
   pollOnce,
 } = require('@librechat/api');
 const connect = require('./connect');
+const { startHeartbeat } = require('./heartbeat');
 
 const STATE_FILE = path.resolve(__dirname, '..', 'data', 'imessage-ingest-state.json');
 const vaultPath = process.env.BRAIN_VAULT_PATH || path.resolve(__dirname, '..', 'brain');
@@ -84,6 +85,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   await connect();
   createModels(mongoose);
   const methods = createMethods(mongoose);
+  startHeartbeat(methods, 'channel-imessage', 'iMessage connector', logger);
   const owner = await methods.findUser({ email: ownerEmail }, '_id');
   if (!owner) {
     throw new Error(`Owner user ${ownerEmail} not found`);

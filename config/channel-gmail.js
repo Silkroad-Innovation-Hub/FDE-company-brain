@@ -19,6 +19,7 @@ const {
   startGmailPoller,
 } = require('@librechat/api');
 const connect = require('./connect');
+const { startHeartbeat } = require('./heartbeat');
 
 const STATE_FILE = path.resolve(__dirname, '..', 'data', 'gmail-ingest-state.json');
 const vaultPath = process.env.BRAIN_VAULT_PATH || path.resolve(__dirname, '..', 'brain');
@@ -71,6 +72,7 @@ function requireEnv(name) {
   await connect();
   createModels(mongoose);
   const methods = createMethods(mongoose);
+  startHeartbeat(methods, 'channel-gmail', 'Gmail connector', logger);
   const owner = await methods.findUser({ email }, '_id');
   if (!owner) {
     throw new Error(`Owner user ${email} not found`);
