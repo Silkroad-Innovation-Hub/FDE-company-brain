@@ -188,3 +188,9 @@ CLAUDE.md
 .gsd
 codedb.snapshot
 scripts/activity-labels/results/
+
+# Silkroad per-client artifacts
+backups/
+brain-*/
+librechat.*.yaml
+librechat.yaml.bak

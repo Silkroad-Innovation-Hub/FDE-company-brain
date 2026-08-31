@@ -37,6 +37,10 @@ const approvals = require('./approvals');
 const brain = require('./brain');
 const guardrails = require('./guardrails');
 const channels = require('./channels');
+const health = require('./health');
+const chase = require('./chase');
+const brief = require('./brief');
+const workflows = require('./workflows');
 const auth = require('./auth');
 const keys = require('./keys');
 const user = require('./user');
@@ -65,6 +69,10 @@ module.exports = {
   brain,
   guardrails,
   channels,
+  health,
+  chase,
+  brief,
+  workflows,
   roles,
   oauth,
   files,

@@ -95,7 +95,7 @@ const attachBrainRetriever = () => {
   }
   const { createBrainRetriever, createBrainEmbed } = require('@librechat/api');
   const methods = require('~/models');
-  app.locals.brainRetriever = createBrainRetriever({
+  const retriever = createBrainRetriever({
     methods,
     embed: createBrainEmbed({
       apiKey: process.env.OPENAI_API_KEY,
@@ -107,6 +107,33 @@ const attachBrainRetriever = () => {
       maxVectors: Number(process.env.BRAIN_RETRIEVAL_MAX_VECTORS) || undefined,
     },
   });
+  app.locals.brainRetriever = retriever;
+  warmBrainIndex(retriever, methods);
+};
+
+/** Embeds new vault notes and log entries shortly after boot so the first brain_search is instant. */
+const warmBrainIndex = (retriever, methods) => {
+  const email = process.env.SILKROAD_USER_EMAIL;
+  if (!email) {
+    return;
+  }
+  const vaultPath = process.env.BRAIN_VAULT_PATH || path.resolve(__dirname, '..', '..', 'brain');
+  setTimeout(async () => {
+    try {
+      const owner = await methods.findUser({ email }, '_id');
+      if (!owner) {
+        return;
+      }
+      const user = String(owner._id);
+      const [vault, log] = await Promise.all([
+        retriever.syncVault(user, vaultPath),
+        retriever.syncLog(user, { limit: 200 }),
+      ]);
+      logger.info(`brain: index warm (notes indexed ${vault.indexed}, log entries ${log})`);
+    } catch (error) {
+      logger.warn(`brain: index warm-up failed: ${error?.message}`);
+    }
+  }, 3000).unref();
 };
 
 const SERVER_NOT_READY_CODE = 'SERVER_NOT_READY';
@@ -370,6 +397,10 @@ const startServer = async () => {
   app.use('/api/brain', routes.brain);
   app.use('/api/guardrails', routes.guardrails);
   app.use('/api/channels', routes.channels);
+  app.use('/api/health', routes.health);
+  app.use('/api/chase', routes.chase);
+  app.use('/api/brief', routes.brief);
+  app.use('/api/workflows', routes.workflows);
   app.use('/api/mcp', routes.mcp);
   app.use('/api/rum', routes.rum);
 
