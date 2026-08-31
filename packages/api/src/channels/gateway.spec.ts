@@ -97,6 +97,7 @@ function deps(fetchFn: typeof fetch, methods: ReturnType<typeof fakeMethods>) {
     endpoint: 'openAI',
     logger,
     fetchFn,
+    turnBudget: 12,
   };
 }
 
@@ -117,6 +118,7 @@ describe('answerViaChat', () => {
     const start = JSON.parse(calls[0].body ?? '{}') as Record<string, unknown>;
     expect(start).toMatchObject({ spec: 'silkroad', endpoint: 'openAI', text: 'who owes me?' });
     expect(start.parentMessageId).toBe('00000000-0000-0000-0000-000000000000');
+    expect(start.ephemeralAgent).toEqual({ recursion_limit: 12 });
     expect(String(start.conversationId)).toMatch(/^[0-9a-f-]{36}$/);
     expect(calls[1].url).toContain(
       `/api/agents/chat/stream/${start.conversationId}?generationCreatedAt=1234`,

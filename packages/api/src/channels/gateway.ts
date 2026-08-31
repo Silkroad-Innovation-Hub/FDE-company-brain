@@ -26,6 +26,8 @@ export interface GatewayDeps {
   logger: { info: (message: string) => void; warn: (message: string) => void };
   fetchFn?: typeof fetch;
   timeoutMs?: number;
+  /** Per-turn graph-step budget for channel answers (brief §6 blast-radius cap). */
+  turnBudget?: number;
   audit?: ChannelAudit;
 }
 
@@ -208,6 +210,7 @@ export async function answerViaChat(
           isCreatedByUser: true,
           sender: 'User',
           clientRequestId: `channel-${request.surface}-${randomUUID()}`,
+          ...(deps.turnBudget ? { ephemeralAgent: { recursion_limit: deps.turnBudget } } : {}),
         }),
         signal: controller.signal,
       }),

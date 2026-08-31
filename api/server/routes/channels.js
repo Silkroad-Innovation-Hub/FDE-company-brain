@@ -21,6 +21,7 @@ const router = express.Router();
 const SURFACES = new Set(['imessage', 'email']);
 const OWNER_TOKEN_TTL_MS = 5 * 60_000;
 const DEFAULT_SPEC = 'silkroad';
+const DEFAULT_TURN_BUDGET = 12;
 
 let ownerCache = null;
 
@@ -84,6 +85,7 @@ router.post('/answer', async (req, res) => {
         endpoint: 'openAI',
         logger,
         timeoutMs: Number(process.env.SILKROAD_CHANNEL_TIMEOUT_MS) || undefined,
+        turnBudget: Number(process.env.SILKROAD_CHANNEL_TURN_BUDGET) || DEFAULT_TURN_BUDGET,
         audit: createChannelAudit(recordAuditEntry, { tenantId: owner.tenantId ?? undefined }),
       },
       { user: userId, surface, externalThreadId, question, sender, subject, format },

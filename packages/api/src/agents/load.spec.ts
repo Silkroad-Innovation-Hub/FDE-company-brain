@@ -83,4 +83,23 @@ describe('loadEphemeralAgent brain_search equipping', () => {
     expect(await toolsFor('plain-spec')).not.toContain('brain_search');
     expect(await toolsFor('plain-spec', { brain_search: true })).toContain('brain_search');
   });
+
+  test('carries a positive integer per-turn budget from the ephemeral toggle only', async () => {
+    const budgetFor = async (ephemeralAgent?: Record<string, unknown>) =>
+      (
+        await loadEphemeralAgent(
+          {
+            req: { ...specReq, body: { ephemeralAgent } } as typeof specReq,
+            spec: 'plain-spec',
+            endpoint: 'openAI',
+            model_parameters: { model: 'gpt-5.5' } as never,
+          },
+          deps,
+        )
+      )?.recursion_limit;
+    expect(await budgetFor({ recursion_limit: 12 })).toBe(12);
+    expect(await budgetFor({ recursion_limit: 0 })).toBeUndefined();
+    expect(await budgetFor({ recursion_limit: 2.5 })).toBeUndefined();
+    expect(await budgetFor()).toBeUndefined();
+  });
 });

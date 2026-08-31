@@ -107,6 +107,8 @@ export type TEphemeralAgent = {
   file_search?: boolean;
   /** Equip the ephemeral agent with the company-brain `brain_search` tool. */
   brain_search?: boolean;
+  /** Per-turn graph-step budget for this run; always clamped by `endpoints.agents.maxRecursionLimit`. */
+  recursion_limit?: number;
   execute_code?: boolean;
   artifacts?: string;
   skills?: boolean;

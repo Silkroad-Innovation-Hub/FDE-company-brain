@@ -160,6 +160,10 @@ export async function loadEphemeralAgent(
     model,
     tools,
   };
+  const turnBudget = ephemeralAgent?.recursion_limit;
+  if (typeof turnBudget === 'number' && Number.isInteger(turnBudget) && turnBudget > 0) {
+    result.recursion_limit = turnBudget;
+  }
 
   const backgroundToolOptions: AgentToolOptions | undefined = synthesizeBackgroundToolOptions({
     ephemeralAgent,
