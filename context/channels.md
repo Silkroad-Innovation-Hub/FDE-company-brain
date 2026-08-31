@@ -231,11 +231,13 @@ rebuild of `packages/api`):
    token expires after 7 days. Until this is done the Gmail connector has never run live.
 
 4. **Since Aug 30 the connectors answer through the API server** (`context/unification.md`):
-   run `npm run channels:token` once, put the printed `SILKROAD_SERVICE_TOKEN` in `.env`,
-   and keep `npm run backend` running whenever a connector runs. Without the token the
-   connectors fall back to the old local answerer (no tools, no mirrored conversations).
-5. **Run `npm run migrate:agent-permissions` once** — the server logs "Agent permissions
-   migration required" and skips the Deep Research subagents for the owner until it is done.
+   `SILKROAD_SERVICE_TOKEN` is in `.env` (generated Aug 30 — rotate with
+   `npm run channels:token`); keep `npm run backend` running whenever a connector runs.
+   Without the token the connectors fall back to the old local answerer (no tools, no
+   mirrored conversations). `SILKROAD_USER_EMAIL` and `SILKROAD_MONTHLY_EXPECTED_USD=50`
+   were added to `.env` at the same time — steps 2 and 4 are done.
+5. ~~Run `npm run migrate:agent-permissions` once~~ — **done Aug 30** (2 private agents
+   migrated); the Deep Research subagents are no longer skipped for the owner.
 
 Kill switch: text or email yourself "pause everything" / "resume".
 

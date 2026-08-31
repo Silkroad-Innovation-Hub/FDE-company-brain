@@ -485,12 +485,20 @@ use it when `SILKROAD_SERVICE_TOKEN` is set (`channels/remote.ts`), falling back
 local chat otherwise. Smoke-tested Aug 30 on a spare port: "Where is Fury being built?" →
 13 s, grounded answer, `brain_search` tool call recorded on the agent message, conversation
 visible under the `silkroad` spec, follow-up answered in 2 s from history,
-`channel.reply_sent` audited. *Deviations:* (1) the plan's per-channel `recursionLimit`
-of 12 is not applied — the loopback cannot set a per-run limit for a preset spec, so
-channel answers use the global cap (25) plus the gateway's 90 s abort; (2) the loopback
-must present a browser-class User-Agent (`uaParser` rejects others) and honour `HOST`
-(an IPv6-only `localhost` bind); (3) `answer.ts` (local chat fallback) is kept, not
-deleted, so connectors still work without the API server.
+`channel.reply_sent` audited. *Deviations:* (1) the loopback must present a browser-class
+User-Agent (`uaParser` rejects others) and honour `HOST` (an IPv6-only `localhost` bind);
+(2) `answer.ts` (local chat fallback) is kept, not deleted, so connectors still work
+without the API server. The per-channel turn budget landed later the same day: the
+request's `ephemeralAgent.recursion_limit` (new, clamped by `maxRecursionLimit`) is set
+to `SILKROAD_CHANNEL_TURN_BUDGET` (default 12) by the gateway.
+
+**Voice (Aug 30, later).** All three spec prompts now share one style block — answer
+first, one to three sentences by default, lists only for list questions, no preamble or
+closing offers, expand only when asked for detail/plan/report — and the Chat prompt's
+hardcoded company facts were removed in favour of `brain_search`, the same way Brain
+Search's were. Deep Research keeps its report shape but is capped to one screen.
+`librechat.yaml` is now tracked in git (it holds no secrets), so these prompts and the
+`endpoints.agents` caps are reproducible.
 
 **Guardrails as code.** 15 new audit actions across `approval`, `channel`, `brain`,
 `guardrail` categories, written from the approvals route, brain approve/reject, the
