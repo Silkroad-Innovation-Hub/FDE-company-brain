@@ -239,6 +239,10 @@ rebuild of `packages/api`):
 5. ~~Run `npm run migrate:agent-permissions` once~~ — **done Aug 30** (2 private agents
    migrated); the Deep Research subagents are no longer skipped for the owner.
 
+6. The worker now also runs the **morning brief** (7:00 local) and the **weekly invoice
+   chase** (Monday 8:00); both arrive as notices over iMessage/email. Re-run
+   `npm run gmail:auth` once Gmail is set up so the token also carries the calendar scope.
+
 Kill switch: text or email yourself "pause everything" / "resume".
 
 ## Status — implemented in the fork (August 30, 2026)

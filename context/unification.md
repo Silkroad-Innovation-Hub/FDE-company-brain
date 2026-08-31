@@ -518,3 +518,14 @@ rollup); `packages/api` retrieval ×3 + manual eval, worker, gateway, policy, dr
 approval, budget, notices, connector gateway/notice paths, `load.spec`; api
 `brainSearch.test.js`; client `BudgetTile`/`Activity`. Whole tree: tsc, ESLint, and
 `circular-deps` clean.
+
+**Finishing pass (Aug 30, evening).** Channel answers now run on a dedicated
+`silkroad-channel` spec (same voice and brain, no subagent fan-out): 13 s → ~3 s per
+answer in the smoke test. The API warms the retrieval index at boot. The proactive layer
+landed (`packages/api/src/workflows/`: morning brief, weekly invoice chase, Intl-based daily
+scheduler, read-only calendar), per-client deployment (`deploy/`, `npm run client:new`,
+pm2 ecosystem, Mongo backup, heartbeats at `/api/health/silkroad`), and the trust-ramp UI
+(memory approvals in the Actions panel, per-workflow Enabled/Auto-send with graduation
+logged, audit CSV export, system health strip). Verified live: `npm run brief:now` produced
+a correct brief; `npm run chase:now` found the overdue Henderson invoice and recorded a
+draft-less approval (Gmail not configured on this machine).

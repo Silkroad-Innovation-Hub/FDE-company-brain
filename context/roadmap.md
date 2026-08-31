@@ -46,6 +46,13 @@ separate worker process, so replies never wait on ingestion.
   the Gmail API with owner-only replies and a draft→approval→send hook. Both connectors are
   dumb raw-log appends; triage/to-dos/injection-flagging run in the distiller worker.
 
+  **Status (Aug 30, 2026, evening) — deployment/ops:** `deploy/docker-compose.silkroad.yml`
+  (mongo + api + worker + gmail from the root Dockerfile, iMessage stays on a Mac relay),
+  `deploy/README.md` runbook, `npm run client:new` (new vault + company-name-swapped
+  `librechat.yaml` + the `.env` lines a client needs), `config/ecosystem.config.js` (pm2,
+  `npm run silkroad:up`), `config/backup-mongo.sh`, process heartbeats behind
+  `GET /api/health/silkroad`, and per-workflow graduation (`WorkflowPolicy`).
+
   **Status (Aug 30, 2026, later):** A2 retrieval and A5 guardrails landed in the fork per
   [`unification.md`](./unification.md) — `brain_search` over vault + raw log on both chat
   specs, channel answers routed through the web-chat pipeline via a service-token gateway,
@@ -56,6 +63,17 @@ separate worker process, so replies never wait on ingestion.
 **A4. Cron workflows (week 2–3).** Morning brief at 7am (triaged inbox, calendar, tasks,
 cash snapshot → iMessage). Weekly AR-chase: QuickBooks aging (read-only) → draft chase
 emails → approval via iMessage tap → send.
+
+  **Status (Aug 30, 2026, evening):** both workflows are live in the fork, run inside the
+  brain worker (`config/brain-worker.js`): the **morning brief** (`packages/api/src/workflows/brief.ts`,
+  daily at `BRIEF_HOUR`, one ≤120-word model call with a deterministic fallback, delivered as a
+  `ChannelNotice` the connectors text/email to the owner; calendar section appears once the
+  Google OAuth client has the calendar scope) and the **invoice chase**
+  (`workflows/chase.ts`, weekly; receivables are vault notes of `type: invoice`; drafts via
+  `draftEmailForApproval` → approval → send, auto-send only after per-workflow graduation).
+  `POST /api/brief/run`, `POST /api/chase/run`, `npm run brief:now`, `npm run chase:now`.
+  QuickBooks/Mercury as the receivables source is still to come — the note format is the
+  interface it will fill.
 
 **A5. Skills + guardrails (week 3, ongoing).** Skill format + private GitHub skills repo;
 hand-write the first three (brief, triage, AR-chase). Guardrails from brief §6 implemented
@@ -231,10 +249,13 @@ complete vault note; a venting message was skipped as ephemeral but kept in the 
 Follow-ups: surface brain approvals in the dashboard Actions panel (converge with the
 `/api/approvals` stack), distill outbound/email/iMessage surfaces when channels exist.
 
-Known polish backlog: "Projects" section still visible in sidebar (fork feature to strip);
-`interface.customWelcome` text not rendering on the landing (icon only); pre-existing tsc
-error in `client/src/hooks/Chat/useChatFunctions.ts:619` (untouched by this work); PNG
-favicons/touch icons still LibreChat's (SVG favicon replaces the main one).
+Known polish backlog — **cleared Aug 30, 2026**: Projects section hidden behind a new
+`interface.projects` flag (`false` in `librechat.yaml`); `customWelcome` verified rendering
+(the earlier note predated upstream's `showOnLanding` change) with a regression test; PNG
+favicons/touch/PWA icons rendered from the Silkroad SVG; the `useChatFunctions.ts` type error
+had already been fixed upstream. `npm run brain:eval` runs 12 demo questions against the live
+retriever (11/12 top-3 on Aug 30 — the miss is "who founded the company", where `Leadership`
+outranks `Anduril`; both list the founders).
 
 ## Sanity notes from the code survey
 

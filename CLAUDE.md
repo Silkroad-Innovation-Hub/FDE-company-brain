@@ -40,7 +40,11 @@ dumb raw-log appends with triage/to-dos/injection-flagging in the worker; `PUT
 calls); connectors answer through `POST /api/channels/answer` (service token, loops back into
 the real chat pipeline, mirrors threads as conversations); guardrails in
 `packages/api/src/guardrails/` + `channels/{policy,drafts,audit}.ts` (audit actions, draft
-allowlist, hourly budget monitor, `GET /api/guardrails/*` behind the dashboard tile/list). Root `CONTEXT.md` is codebase domain language, unrelated to product
+allowlist, hourly budget monitor, `GET /api/guardrails/*` behind the dashboard tile/list).
+Proactive workflows live in `packages/api/src/workflows/` (morning brief, weekly invoice chase over
+`type: invoice` vault notes, daily scheduler, calendar) and run inside the brain worker; per-client
+deployment is `deploy/` + `npm run client:new`; process liveness at `GET /api/health/silkroad`;
+channel answers use the `silkroad-channel` spec (no subagents) for speed. Root `CONTEXT.md` is codebase domain language, unrelated to product
 context. Guardrails in `context/brief.md` §6 are non-negotiable when designing features.
 Interface polish is an explicit product requirement — this is sold to executives.
 
