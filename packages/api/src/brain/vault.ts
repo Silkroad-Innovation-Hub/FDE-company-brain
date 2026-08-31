@@ -125,9 +125,54 @@ function isSafeNoteId(noteId: string): boolean {
   );
 }
 
-export async function loadVault(vaultPath: string): Promise<BrainNoteMeta[]> {
+interface VaultCacheEntry {
+  stamp: string;
+  notes: BrainNoteMeta[];
+}
+
+const vaultCache = new Map<string, VaultCacheEntry>();
+
+async function listNoteFiles(vaultPath: string): Promise<string[]> {
   const entries = await fs.readdir(vaultPath, { withFileTypes: true });
-  const files = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md'));
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name);
+}
+
+/**
+ * Cheap change detector for a vault: file count plus the newest mtime. One
+ * `stat` per note, no content reads — lets callers skip re-indexing work.
+ */
+export async function vaultStamp(vaultPath: string): Promise<string> {
+  const files = await listNoteFiles(vaultPath);
+  const stats = await Promise.all(files.map((name) => fs.stat(path.join(vaultPath, name))));
+  const newest = stats.reduce((max, stat) => Math.max(max, stat.mtimeMs), 0);
+  const bytes = stats.reduce((sum, stat) => sum + stat.size, 0);
+  return `${files.length}:${newest}:${bytes}`;
+}
+
+export function invalidateVaultCache(vaultPath?: string): void {
+  if (vaultPath) {
+    vaultCache.delete(vaultPath);
+    return;
+  }
+  vaultCache.clear();
+}
+
+export async function loadVault(vaultPath: string): Promise<BrainNoteMeta[]> {
+  const stamp = await vaultStamp(vaultPath);
+  const cached = vaultCache.get(vaultPath);
+  if (cached && cached.stamp === stamp) {
+    return cached.notes;
+  }
+  const notes = await readVault(vaultPath);
+  vaultCache.set(vaultPath, { stamp, notes });
+  return notes;
+}
+
+async function readVault(vaultPath: string): Promise<BrainNoteMeta[]> {
+  const names = await listNoteFiles(vaultPath);
+  const files = names.map((name) => ({ name }));
   return Promise.all(
     files.map(async (file) => {
       const content = await fs.readFile(path.join(vaultPath, file.name), 'utf-8');
@@ -223,6 +268,7 @@ export async function writeBrainNote(vaultPath: string, note: BrainNoteWrite): P
   const frontmatter = `---\ntype: ${note.type}\ntags: [${tags}]\n---\n\n`;
   const body = note.content.replace(FRONTMATTER_PATTERN, '');
   await fs.writeFile(path.join(vaultPath, `${note.id}.md`), frontmatter + body.trim() + '\n');
+  invalidateVaultCache(vaultPath);
   return true;
 }
 

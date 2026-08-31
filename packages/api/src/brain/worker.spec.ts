@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import type { BrainLogLean, BrainLogResolution, TodoLean } from '@librechat/data-schemas';
+import type { BrainRetriever, BrainHit } from './retrieval/types';
 import type { BrainWorkerMethods } from './worker';
 import type { GateChatMessage } from './gate';
 import { runBrainWorkerOnce, applyBrainApproval } from './worker';
@@ -335,6 +336,136 @@ describe('runBrainWorkerOnce — channels', () => {
     expect(processed).toBe(0);
     expect(store[0].status).toBe('pending');
     expect(chat).not.toHaveBeenCalled();
+  });
+});
+
+function fakeRetriever(hits: BrainHit[]) {
+  const retriever: BrainRetriever = {
+    search: jest.fn(async () => hits),
+    indexNote: jest.fn(async () => ({ indexed: 1, unchanged: 0, removed: 0 })),
+    removeNote: jest.fn(async () => 0),
+    indexLogEntries: jest.fn(async () => 0),
+    syncVault: jest.fn(async () => ({ indexed: 0, unchanged: 0, removed: 0 })),
+    syncLog: jest.fn(async () => 0),
+  };
+  return retriever;
+}
+
+describe('runBrainWorkerOnce — retrieval', () => {
+  const logHit = (refId: string, score: number): BrainHit => ({
+    kind: 'log',
+    refId,
+    title: 'imessage from the owner',
+    text: 'Signed the Vannevar pilot, 250k',
+    score,
+  });
+  const noteHit = (refId: string, score: number): BrainHit => ({
+    kind: 'note',
+    refId,
+    title: refId,
+    text: `# ${refId}`,
+    score,
+  });
+
+  it('skips near-duplicates of settled log entries without calling any model', async () => {
+    const { methods, store } = createQueue([
+      { text: 'signed vannevar pilot 250k', status: 'skipped', outcome: 'known' },
+      { text: 'Signed the Vannevar pilot, 250k' },
+    ]);
+    const chat = jest.fn();
+    const retriever = fakeRetriever([logHit('0', 0.98), noteHit('Acme', 0.4)]);
+    await runBrainWorkerOnce({
+      methods,
+      gate: createGate({ chat }),
+      vaultPath,
+      approvalRequired: false,
+      logger: noopLogger,
+      retriever,
+    });
+    expect(store[1]).toMatchObject({ status: 'skipped', outcome: 'known' });
+    expect(store[1].reason).toContain('near-duplicate of m0');
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it('ignores near-duplicates that were never settled and uses retrieval hits as related notes', async () => {
+    const { methods, store } = createQueue([
+      { text: 'pending twin', status: 'pending', direction: 'outbound' },
+      { text: 'Acme moved HQ to Austin' },
+    ]);
+    const { gate, chat } = gateWith({
+      triage: { verdict: 'durable', related: ['Office Lease'], reason: 'update' },
+      distill: {
+        action: 'create',
+        noteId: 'Acme',
+        noteType: 'company',
+        noteContent: 'Acme is a client based in Austin. See [[Acme Deal]].',
+        reason: 'HQ update',
+      },
+    });
+    const retriever = fakeRetriever([logHit('0', 0.99), noteHit('Acme', 0.8)]);
+    await runBrainWorkerOnce({
+      methods,
+      gate,
+      vaultPath,
+      approvalRequired: false,
+      logger: noopLogger,
+      retriever,
+    });
+    expect(store[1]).toMatchObject({ status: 'applied', outcome: 'merge' });
+    const distillPrompt = chat.mock.calls[1][0][1].content;
+    expect(distillPrompt).toContain('## Acme');
+    expect(distillPrompt).not.toContain('## Office Lease');
+    expect(retriever.indexNote).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ id: 'Acme', content: expect.stringContaining('Austin') }),
+    );
+  });
+
+  it('syncs the raw log every tick and the vault only when its files change', async () => {
+    const { methods } = createQueue([]);
+    const retriever = fakeRetriever([]);
+    const deps = {
+      methods,
+      gate: createGate({ chat: jest.fn() }),
+      vaultPath,
+      approvalRequired: false,
+      logger: noopLogger,
+      retriever,
+      owner: 'u1',
+    };
+    await runBrainWorkerOnce(deps);
+    await runBrainWorkerOnce(deps);
+    expect(retriever.syncLog).toHaveBeenCalledTimes(2);
+    expect(retriever.syncVault).toHaveBeenCalledTimes(1);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await fs.writeFile(
+      path.join(vaultPath, 'New Note.md'),
+      '---\ntype: note\ntags: []\n---\n\nHi.\n',
+    );
+    await runBrainWorkerOnce(deps);
+    expect(retriever.syncVault).toHaveBeenCalledTimes(2);
+  });
+
+  it('indexes notes written through approval', async () => {
+    const { methods, store } = createQueue([
+      {
+        text: 'approved',
+        status: 'awaiting_approval',
+        noteId: 'Dana Lee',
+        noteType: 'person',
+        noteContent: 'VP Sales.',
+      },
+    ]);
+    const retriever = fakeRetriever([]);
+    const applied = await applyBrainApproval(
+      { methods, vaultPath, retriever, logger: noopLogger },
+      String(store[0]._id),
+    );
+    expect(applied?.status).toBe('applied');
+    expect(retriever.indexNote).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ id: 'Dana Lee' }),
+    );
   });
 });
 

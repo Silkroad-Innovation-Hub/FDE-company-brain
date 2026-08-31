@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import type { BrainLogLean, BrainLogAppendData, TodoLean } from '@librechat/data-schemas';
+import type { BrainRetriever } from '~/brain/retrieval/types';
 import type { BrainChatMessage } from '~/brain/openai';
 import { handlePauseCommand, parsePauseCommand, PAUSE_ACK } from './pause';
 import { answerQuestion, relevantNotes } from './answer';
@@ -93,6 +94,29 @@ describe('pause command', () => {
     expect(setChannelsPaused).toHaveBeenCalledWith('u1', true, 'email');
     expect(await handlePauseCommand({ setChannelsPaused }, 'u1', 'hello', 'email')).toBeNull();
   });
+
+  it('audits pause and resume when a recorder is available, and survives a failing one', async () => {
+    const setChannelsPaused = jest.fn(async () => ({}) as never);
+    const recordAuditEntry = jest.fn(async () => ({}) as never);
+    await handlePauseCommand({ setChannelsPaused, recordAuditEntry }, 'u1', 'pause', 'imessage');
+    await handlePauseCommand({ setChannelsPaused, recordAuditEntry }, 'u1', 'resume', 'imessage');
+    expect(recordAuditEntry.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
+      expect.objectContaining({
+        action: 'channel.paused',
+        severity: 'warning',
+        actor: { type: 'user', id: 'u1', name: 'owner' },
+        target: { type: 'channels', id: 'u1' },
+        metadata: { via: 'imessage' },
+      }),
+      expect.objectContaining({ action: 'channel.resumed', severity: 'info' }),
+    ]);
+    const broken = jest.fn(async () => {
+      throw new Error('audit down');
+    });
+    await expect(
+      handlePauseCommand({ setChannelsPaused, recordAuditEntry: broken }, 'u1', 'pause', 'email'),
+    ).resolves.toBe(PAUSE_ACK);
+  });
 });
 
 describe('answerQuestion', () => {
@@ -148,5 +172,39 @@ describe('answerQuestion', () => {
     );
     expect(answer).toBe('Henderson owes $12,400 since Aug 1; Dana Lee is the AP contact.');
     expect(chat).toHaveBeenCalledWith(expect.any(Array), 'test-model');
+  });
+
+  it('prefers the retriever and renders raw-log hits with provenance', async () => {
+    const search = jest.fn(async () => [
+      {
+        kind: 'log' as const,
+        refId: 'log-1',
+        title: 'imessage from +15551234567',
+        text: 'Vannevar pilot signed, 250k',
+        score: 0.9,
+        surface: 'imessage',
+        sender: '+15551234567',
+        sourceAt: new Date('2026-08-28T12:00:00Z'),
+      },
+      {
+        kind: 'note' as const,
+        refId: 'Henderson Invoice',
+        title: 'Henderson Invoice',
+        text: '# Henderson Invoice\n$12,400',
+        score: 0.6,
+      },
+    ]);
+    const retriever = { search } as unknown as BrainRetriever;
+    const chat = jest.fn(async (messages: BrainChatMessage[]) => {
+      expect(messages[1].content).toContain('--- iMessage from +15551234567, Aug 28 ---');
+      expect(messages[1].content).toContain('--- Henderson Invoice ---');
+      return 'ok';
+    });
+    await answerQuestion(
+      { chat, model: 'm', vaultPath, retriever, methods: { getTodos: async () => [] } },
+      { user: 'u1', surface: 'iMessage', question: 'vannevar?' },
+    );
+    expect(search).toHaveBeenCalledWith('u1', 'vannevar?', { k: 5 });
+    expect(chat).toHaveBeenCalledTimes(1);
   });
 });
