@@ -53,7 +53,7 @@ export async function handlePauseCommand(
     return null;
   }
   await methods.setChannelsPaused(user, command === 'pause', via);
-  const audit = createChannelAudit(methods.recordAuditEntry);
+  const audit = createChannelAudit(methods.recordAuditEntry, { user });
   await audit(command === 'pause' ? 'channel.paused' : 'channel.resumed', {
     actor: ownerActor(user),
     target: { type: 'channels', id: user },

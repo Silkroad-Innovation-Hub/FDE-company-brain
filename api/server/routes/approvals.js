@@ -101,7 +101,7 @@ function draftMailer(policy) {
 
 function auditContext(req) {
   return {
-    audit: createChannelAudit(recordAuditEntry, { tenantId: req.user.tenantId }),
+    audit: createChannelAudit(recordAuditEntry, { tenantId: req.user.tenantId, user: req.user.id }),
     actor: ownerActor(req.user.id, req.user.email || 'owner'),
   };
 }

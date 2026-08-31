@@ -32,7 +32,10 @@ let graphCacheAt = 0;
 const brainLogMethods = { getBrainLog, resolveBrainLog, getTodos, createTodo };
 
 function auditWrite(req, action, entry, outcome) {
-  const audit = createChannelAudit(recordAuditEntry, { tenantId: req.user.tenantId });
+  const audit = createChannelAudit(recordAuditEntry, {
+    tenantId: req.user.tenantId,
+    user: req.user.id,
+  });
   return audit(action, {
     actor: ownerActor(req.user.id, req.user.email || 'owner'),
     target: { type: 'note', id: entry.noteId || undefined, name: entry.noteId || undefined },

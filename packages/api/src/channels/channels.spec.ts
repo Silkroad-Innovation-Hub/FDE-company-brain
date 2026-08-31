@@ -106,7 +106,7 @@ describe('pause command', () => {
         severity: 'warning',
         actor: { type: 'user', id: 'u1', name: 'owner' },
         target: { type: 'channels', id: 'u1' },
-        metadata: { via: 'imessage' },
+        metadata: { user: 'u1', via: 'imessage' },
       }),
       expect.objectContaining({ action: 'channel.resumed', severity: 'info' }),
     ]);

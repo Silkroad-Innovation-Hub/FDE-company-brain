@@ -51,9 +51,15 @@ export function ownerActor(userId: string, name: string = 'owner'): AuditActorIn
 /** Audit sink that records nothing — for tests and callers without a recorder. */
 export const NOOP_AUDIT: ChannelAudit = async () => false;
 
+export interface ChannelAuditOptions {
+  tenantId?: string;
+  /** Owner the entry belongs to; stamped into metadata so owner-scoped views include agent/system actors. */
+  user?: string;
+}
+
 export function createChannelAudit(
   recordAuditEntry: RecordAuditEntry | undefined,
-  options: { tenantId?: string } = {},
+  options: ChannelAuditOptions = {},
 ): ChannelAudit {
   return async (action, event, writeOptions) => {
     const failClosed = writeOptions?.failClosed === true;
@@ -64,8 +70,12 @@ export function createChannelAudit(
       return false;
     }
     try {
+      const metadata =
+        options.user && event.metadata?.user == null
+          ? { user: options.user, ...(event.metadata ?? {}) }
+          : event.metadata;
       const entry = await recordAuditEntry(
-        { action, ...event, tenantId: options.tenantId },
+        { action, ...event, metadata, tenantId: options.tenantId },
         writeOptions,
       );
       if (entry == null && failClosed) {
