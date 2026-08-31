@@ -41,6 +41,9 @@ export interface BrainLogClaimOptions {
 const DEFAULT_CLAIM_LIMIT = 10;
 const DEFAULT_QUIET_MS = 15_000;
 const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_EMBED_LIMIT = 200;
+const DEFAULT_EMBED_WINDOW_DAYS = 90;
+const DAY_MS = 86_400_000;
 
 export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
   appendBrainLog: (user: string, data: BrainLogAppendData) => Promise<BrainLogLean | null>;
@@ -57,6 +60,11 @@ export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
   }) => Promise<BrainLogLean[]>;
   getBrainLog: (brainLogId: string) => Promise<BrainLogLean | null>;
   countBrainLogsByStatus: () => Promise<Record<string, number>>;
+  listBrainLogsForEmbedding: (
+    user: string,
+    options?: { limit?: number; sinceDays?: number },
+  ) => Promise<BrainLogLean[]>;
+  markBrainLogsEmbedded: (brainLogIds: string[]) => Promise<number>;
 } {
   const getBrainLogModel = (): Model<IBrainLogDocument> =>
     mongoose.models.BrainLog as Model<IBrainLogDocument>;
@@ -175,6 +183,36 @@ export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
     }, {});
   }
 
+  /** Human-authored, non-bulk entries not yet embedded, oldest first (retrieval index feed). */
+  async function listBrainLogsForEmbedding(
+    user: string,
+    options: { limit?: number; sinceDays?: number } = {},
+  ): Promise<BrainLogLean[]> {
+    const since = new Date(Date.now() - (options.sinceDays ?? DEFAULT_EMBED_WINDOW_DAYS) * DAY_MS);
+    return getBrainLogModel()
+      .find({
+        user,
+        direction: 'inbound',
+        embeddedAt: { $exists: false },
+        createdAt: { $gte: since },
+        outcome: { $ne: 'bulk' },
+      })
+      .sort({ createdAt: 1 })
+      .limit(options.limit ?? DEFAULT_EMBED_LIMIT)
+      .lean<BrainLogLean[]>();
+  }
+
+  async function markBrainLogsEmbedded(brainLogIds: string[]): Promise<number> {
+    if (brainLogIds.length === 0) {
+      return 0;
+    }
+    const result = await getBrainLogModel().updateMany(
+      { _id: { $in: brainLogIds } },
+      { $set: { embeddedAt: new Date() } },
+    );
+    return result.modifiedCount;
+  }
+
   return {
     appendBrainLog,
     claimPendingBrainLogs,
@@ -183,6 +221,8 @@ export function createBrainLogMethods(mongoose: typeof import('mongoose')): {
     listBrainLogs,
     getBrainLog,
     countBrainLogsByStatus,
+    listBrainLogsForEmbedding,
+    markBrainLogsEmbedded,
   };
 }
 

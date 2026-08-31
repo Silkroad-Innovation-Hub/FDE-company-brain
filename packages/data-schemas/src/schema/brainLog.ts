@@ -34,6 +34,7 @@ export interface IBrainLog {
   reason?: string;
   attempts: number;
   processedAt?: Date;
+  embeddedAt?: Date;
   tenantId?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -117,6 +118,9 @@ const brainLog: Schema<IBrainLogDocument> = new Schema<IBrainLogDocument>(
     processedAt: {
       type: Date,
     },
+    embeddedAt: {
+      type: Date,
+    },
     tenantId: {
       type: String,
       index: true,
@@ -127,5 +131,6 @@ const brainLog: Schema<IBrainLogDocument> = new Schema<IBrainLogDocument>(
 
 brainLog.index({ status: 1, direction: 1, updatedAt: 1 });
 brainLog.index({ user: 1, status: 1, tenantId: 1 });
+brainLog.index({ user: 1, direction: 1, embeddedAt: 1, createdAt: 1 });
 
 export default brainLog;

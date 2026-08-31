@@ -65,6 +65,12 @@ export interface TransactionResult {
   credits?: number;
 }
 
+export interface TransactionSpendSummary {
+  totalCredits: number;
+  byContext: Record<string, number>;
+  since: Date;
+}
+
 export function createTransactionMethods(
   mongoose: typeof import('mongoose'),
   txMethods: {
@@ -85,6 +91,7 @@ export function createTransactionMethods(
   findBalanceByUser: (user: string) => Promise<IBalance | null>;
   upsertBalanceFields: (user: string, fields: IBalanceUpdate) => Promise<IBalance | null>;
   getTransactions: (filter: FilterQuery<ITransaction>) => Promise<ITransaction[]>;
+  sumTransactionValueSince: (user: string, since: Date) => Promise<TransactionSpendSummary>;
   deleteTransactions: (
     filter: FilterQuery<ITransaction>,
   ) => Promise<import('mongodb').DeleteResult>;
@@ -424,6 +431,27 @@ export function createTransactionMethods(
     }
   }
 
+  /**
+   * Absolute token value (credits; 1e6 credits = 1 USD) spent by a user since
+   * an instant, split by transaction context. Feeds the monthly budget guardrail.
+   */
+  async function sumTransactionValueSince(
+    user: string,
+    since: Date,
+  ): Promise<TransactionSpendSummary> {
+    const Transaction = mongoose.models.Transaction as Model<ITransaction>;
+    const rows = await Transaction.aggregate<{ _id: string | null; credits: number }>([
+      { $match: { user: new mongoose.Types.ObjectId(user), createdAt: { $gte: since } } },
+      { $group: { _id: '$context', credits: { $sum: { $abs: { $ifNull: ['$tokenValue', 0] } } } } },
+    ]);
+    const byContext = rows.reduce<Record<string, number>>((acc, row) => {
+      acc[row._id ?? 'unknown'] = row.credits;
+      return acc;
+    }, {});
+    const totalCredits = rows.reduce((sum, row) => sum + row.credits, 0);
+    return { totalCredits, byContext, since };
+  }
+
   /** Retrieves a user's balance record. */
   async function findBalanceByUser(user: string): Promise<IBalance | null> {
     const Balance = mongoose.models.Balance as Model<IBalance>;
@@ -478,6 +506,7 @@ export function createTransactionMethods(
     findBalanceByUser,
     upsertBalanceFields,
     getTransactions,
+    sumTransactionValueSince,
     deleteTransactions,
     deleteBalances,
     createTransaction,

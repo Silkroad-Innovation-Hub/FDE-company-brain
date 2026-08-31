@@ -4,6 +4,10 @@ import { createConversationTagModel } from './conversationTag';
 import { createTodoModel } from './todo';
 import { createBrainLogModel } from './brainLog';
 import { createChannelStateModel } from './channelState';
+import { createBrainVectorModel } from './brainVector';
+import { createChannelThreadModel } from './channelThread';
+import { createChannelNoticeModel } from './channelNotice';
+import { createGuardrailStateModel } from './guardrailState';
 import { createApprovalModel } from './approval';
 import { createAgentCategoryModel } from './agentCategory';
 import { createChatProjectModel } from './chatProject';
@@ -75,6 +79,10 @@ export function createModels(mongoose: typeof import('mongoose')): {
   Todo: ReturnType<typeof createTodoModel>;
   BrainLog: ReturnType<typeof createBrainLogModel>;
   ChannelState: ReturnType<typeof createChannelStateModel>;
+  BrainVector: ReturnType<typeof createBrainVectorModel>;
+  ChannelThread: ReturnType<typeof createChannelThreadModel>;
+  ChannelNotice: ReturnType<typeof createChannelNoticeModel>;
+  GuardrailState: ReturnType<typeof createGuardrailStateModel>;
   Approval: ReturnType<typeof createApprovalModel>;
   SharedLink: ReturnType<typeof createSharedLinkModel>;
   ToolCall: ReturnType<typeof createToolCallModel>;
@@ -118,6 +126,10 @@ export function createModels(mongoose: typeof import('mongoose')): {
     Todo: createTodoModel(mongoose),
     BrainLog: createBrainLogModel(mongoose),
     ChannelState: createChannelStateModel(mongoose),
+    BrainVector: createBrainVectorModel(mongoose),
+    ChannelThread: createChannelThreadModel(mongoose),
+    ChannelNotice: createChannelNoticeModel(mongoose),
+    GuardrailState: createGuardrailStateModel(mongoose),
     Approval: createApprovalModel(mongoose),
     SharedLink: createSharedLinkModel(mongoose),
     ToolCall: createToolCallModel(mongoose),

@@ -55,6 +55,15 @@ export type {
 } from './brainLog';
 import { createChannelStateMethods, type ChannelStateMethods } from './channelState';
 export type { ChannelStateLean } from './channelState';
+import { createBrainVectorMethods, type BrainVectorMethods } from './brainVector';
+export type { BrainVectorLean, BrainVectorUpsert, BrainVectorListOptions } from './brainVector';
+import { createChannelThreadMethods, type ChannelThreadMethods } from './channelThread';
+export type { ChannelThreadLean, ChannelThreadKey } from './channelThread';
+import { createChannelNoticeMethods, type ChannelNoticeMethods } from './channelNotice';
+export type { ChannelNoticeLean } from './channelNotice';
+import { createGuardrailStateMethods, type GuardrailStateMethods } from './guardrailState';
+export type { GuardrailStateLean } from './guardrailState';
+export type { TransactionSpendSummary } from './transaction';
 import { createApprovalMethods, type ApprovalMethods } from './approval';
 export type { ApprovalLean, ApprovalCreateData } from './approval';
 import { createMessageMethods, type MessageMethods } from './message';
@@ -188,6 +197,10 @@ export type AllMethods = UserMethods &
   TodoMethods &
   BrainLogMethods &
   ChannelStateMethods &
+  BrainVectorMethods &
+  ChannelThreadMethods &
+  ChannelNoticeMethods &
+  GuardrailStateMethods &
   ApprovalMethods &
   MessageMethods &
   ConversationMethods &
@@ -327,6 +340,10 @@ export function createMethods(
     ...createTodoMethods(mongoose),
     ...createBrainLogMethods(mongoose),
     ...createChannelStateMethods(mongoose),
+    ...createBrainVectorMethods(mongoose),
+    ...createChannelThreadMethods(mongoose),
+    ...createChannelNoticeMethods(mongoose),
+    ...createGuardrailStateMethods(mongoose),
     ...createApprovalMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
@@ -377,6 +394,10 @@ export type {
   TodoMethods,
   BrainLogMethods,
   ChannelStateMethods,
+  BrainVectorMethods,
+  ChannelThreadMethods,
+  ChannelNoticeMethods,
+  GuardrailStateMethods,
   ApprovalMethods,
   MessageMethods,
   ConversationMethods,

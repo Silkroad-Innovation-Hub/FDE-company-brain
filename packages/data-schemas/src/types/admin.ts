@@ -56,6 +56,9 @@ export const AUDIT_CATEGORIES = [
   'permission',
   'auth',
   'approval',
+  'channel',
+  'guardrail',
+  'brain',
 ] as const;
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
 
@@ -65,13 +68,46 @@ export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
  * action maps unambiguously to a category. The Mongoose schema enum and the
  * HTTP handler's whitelist both consume this constant so they cannot drift.
  */
-export const AUDIT_ACTIONS = ['grant.assigned', 'grant.removed'] as const;
+export const AUDIT_ACTIONS = [
+  'grant.assigned',
+  'grant.removed',
+  'approval.created',
+  'approval.approved',
+  'approval.denied',
+  'approval.reopened',
+  'channel.paused',
+  'channel.resumed',
+  'channel.reply_sent',
+  'channel.draft_created',
+  'channel.draft_sent',
+  'channel.draft_deleted',
+  'channel.draft_blocked',
+  'brain.write_applied',
+  'brain.write_rejected',
+  'guardrail.budget_alert',
+  'guardrail.budget_pause',
+] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** Maps each action to its category so writers never pass both. */
 export const AUDIT_ACTION_CATEGORY: Record<AuditAction, AuditCategory> = {
   'grant.assigned': 'grant',
   'grant.removed': 'grant',
+  'approval.created': 'approval',
+  'approval.approved': 'approval',
+  'approval.denied': 'approval',
+  'approval.reopened': 'approval',
+  'channel.paused': 'channel',
+  'channel.resumed': 'channel',
+  'channel.reply_sent': 'channel',
+  'channel.draft_created': 'channel',
+  'channel.draft_sent': 'channel',
+  'channel.draft_deleted': 'channel',
+  'channel.draft_blocked': 'channel',
+  'brain.write_applied': 'brain',
+  'brain.write_rejected': 'brain',
+  'guardrail.budget_alert': 'guardrail',
+  'guardrail.budget_pause': 'guardrail',
 };
 
 /** Result of the audited operation. Kept first-class instead of being encoded
