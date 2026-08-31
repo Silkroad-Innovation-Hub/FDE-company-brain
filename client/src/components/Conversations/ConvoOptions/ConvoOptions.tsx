@@ -303,6 +303,7 @@ function ConvoOptions({
       {
         label: localize('com_ui_change_project'),
         onClick: projectHandler,
+        show: startupConfig?.interface?.projects !== false,
         icon: <FolderInput className="icon-sm mr-2 text-text-primary" aria-hidden="true" />,
         ariaHasPopup: 'dialog' as const,
         ariaControls: 'project-conversation-dialog',
@@ -313,7 +314,7 @@ function ConvoOptions({
       {
         label: localize('com_ui_remove_from_project'),
         onClick: removeProjectHandler,
-        show: Boolean(chatProjectId),
+        show: Boolean(chatProjectId) && startupConfig?.interface?.projects !== false,
         hideOnClick: false,
         icon: assignConversationToProject.isLoading ? (
           <Spinner className="size-4" />

@@ -12,7 +12,11 @@ import {
   useLocalStorage,
   useNavScrolling,
 } from '~/hooks';
-import { useConversationsInfiniteQuery, useTitleGeneration } from '~/data-provider';
+import {
+  useConversationsInfiniteQuery,
+  useGetStartupConfig,
+  useTitleGeneration,
+} from '~/data-provider';
 import ProjectsSection from '~/components/Conversations/ProjectsSection';
 import FavoritesList from '~/components/Nav/Favorites/FavoritesList';
 import { Conversations } from '~/components/Conversations';
@@ -23,6 +27,8 @@ const BookmarkNav = lazy(() => import('~/components/Nav/Bookmarks/BookmarkNav'))
 
 const ConversationsSection = memo(() => {
   const localize = useLocalize();
+  const { data: startupConfig } = useGetStartupConfig();
+  const projectsEnabled = startupConfig?.interface?.projects !== false;
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
   const setSidebarExpanded = useSetRecoilState(store.sidebarExpanded);
   const { isAuthenticated } = useAuthContext();
@@ -121,7 +127,9 @@ const ConversationsSection = memo(() => {
           <FavoritesList isSmallScreen={isSmallScreen} toggleNav={toggleNav} />
         </div>
       )}
-      {!search.query && <ProjectsSection toggleNav={toggleNav} isAuthenticated={isAuthenticated} />}
+      {!search.query && projectsEnabled && (
+        <ProjectsSection toggleNav={toggleNav} isAuthenticated={isAuthenticated} />
+      )}
       <div className="flex min-h-0 flex-grow flex-col overflow-hidden">
         <Conversations
           conversations={conversations}
