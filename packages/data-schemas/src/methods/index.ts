@@ -63,6 +63,10 @@ import { createChannelNoticeMethods, type ChannelNoticeMethods } from './channel
 export type { ChannelNoticeLean } from './channelNotice';
 import { createGuardrailStateMethods, type GuardrailStateMethods } from './guardrailState';
 export type { GuardrailStateLean } from './guardrailState';
+import { createWorkflowPolicyMethods, type WorkflowPolicyMethods } from './workflowPolicy';
+export type { WorkflowPolicyLean, WorkflowPolicyUpdate } from './workflowPolicy';
+import { createHeartbeatMethods, type HeartbeatMethods } from './heartbeat';
+export type { HeartbeatLean } from './heartbeat';
 export type { TransactionSpendSummary } from './transaction';
 import { createApprovalMethods, type ApprovalMethods } from './approval';
 export type { ApprovalLean, ApprovalCreateData } from './approval';
@@ -201,6 +205,8 @@ export type AllMethods = UserMethods &
   ChannelThreadMethods &
   ChannelNoticeMethods &
   GuardrailStateMethods &
+  WorkflowPolicyMethods &
+  HeartbeatMethods &
   ApprovalMethods &
   MessageMethods &
   ConversationMethods &
@@ -344,6 +350,8 @@ export function createMethods(
     ...createChannelThreadMethods(mongoose),
     ...createChannelNoticeMethods(mongoose),
     ...createGuardrailStateMethods(mongoose),
+    ...createWorkflowPolicyMethods(mongoose),
+    ...createHeartbeatMethods(mongoose),
     ...createApprovalMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
@@ -398,6 +406,8 @@ export type {
   ChannelThreadMethods,
   ChannelNoticeMethods,
   GuardrailStateMethods,
+  WorkflowPolicyMethods,
+  HeartbeatMethods,
   ApprovalMethods,
   MessageMethods,
   ConversationMethods,

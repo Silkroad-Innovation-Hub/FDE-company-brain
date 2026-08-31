@@ -39,6 +39,8 @@ export type { IBrainVector, BrainVectorKind } from './brainVector';
 export type { IChannelThread } from './channelThread';
 export type { IChannelNotice, ChannelNoticeStatus } from './channelNotice';
 export type { IGuardrailState } from './guardrailState';
+export type { IWorkflowPolicy } from './workflowPolicy';
+export type { IHeartbeat } from './heartbeat';
 export type { IApproval, IApprovalPayload, ApprovalKind, ApprovalStatus } from './approval';
 export { default as toolFavoriteSchema } from './favorite';
 export { default as groupSchema } from './group';
