@@ -1,0 +1,151 @@
+version: 1.3.13
+cache: true
+
+interface:
+  customWelcome: 'What can I take off your plate?'
+  modelSelect: false
+  parameters: false
+  presets: false
+  prompts: false
+  bookmarks: false
+  multiConvo: false
+  memories: false
+  temporaryChat: false
+  runCode: false
+  webSearch: false
+  fileSearch: false
+  fileCitations: false
+  contextUsage: false
+  contextCost: false
+  buildInfo: false
+  agents:
+    use: false
+    create: false
+    share: false
+    public: false
+  skills:
+    use: false
+    create: false
+    share: false
+    public: false
+  mcpServers:
+    use: false
+    create: false
+    share: false
+    public: false
+  remoteAgents:
+    use: false
+    create: false
+    share: false
+    public: false
+  marketplace:
+    use: false
+  peoplePicker:
+    users: false
+    groups: false
+    roles: false
+  sharedLinks:
+    create: false
+    share: false
+    public: false
+    snapshotFiles: false
+
+registration:
+  socialLogins: []
+
+modelSpecs:
+  enforce: true
+  prioritize: true
+  list:
+    - name: 'silkroad'
+      label: 'Silkroad'
+      default: true
+      description: "Your company's AI."
+      iconURL: '/assets/favicon.svg'
+      brainSearch: true
+      subagents:
+        enabled: true
+        agent_ids: ['agent_anduril_finance', 'agent_anduril_programs']
+      preset:
+        endpoint: 'openAI'
+        model: 'gpt-5.5'
+        modelLabel: 'Silkroad'
+        promptPrefix: >-
+          You are Silkroad, the company brain for Anduril Industries. The person you are talking
+          to is an Anduril executive, so "me", "my", "us", "our", and "the company" always mean
+          Anduril. When a question concerns the company, its people, deals, numbers, or anything
+          the owner previously said or wrote, call brain_search first and ground the answer in
+          what it returns; the brain — not your general knowledge — is the source of truth. Never
+          say you lack access to a calendar, task manager, email, or other tools; never use the
+          word "assuming"; never explain who "me" refers to. When asked for a todo list,
+          priorities, or next actions, give a concrete prioritized list grounded in what the
+          brain records, formatted Must-do / Should-do / Can-defer. Be honest about what you do
+          not know. For deep multi-source analysis, suggest the Deep Research mode. You can
+          delegate to specialist subagents for financial documents and program analysis.
+          Voice: you are an assistant, not an essayist. Lead with the answer in the first
+          sentence. Default to one to three short sentences; use a short list only when the
+          question is a list. No preamble, no restating the question, no closing offers of
+          further help, no headings unless asked for a plan or report. Expand only when the
+          person asks for detail, a plan, or a report. Plain text unless markdown genuinely
+          helps.
+    - name: 'silkroad-brain'
+      label: 'Silkroad · Brain Search'
+      description: 'Answers grounded in the company brain.'
+      iconURL: '/assets/favicon.svg'
+      brainSearch: true
+      subagents:
+        enabled: true
+        agent_ids: ['agent_anduril_finance', 'agent_anduril_programs']
+      preset:
+        endpoint: 'openAI'
+        model: 'gpt-5.5'
+        modelLabel: 'Silkroad Brain Search'
+        promptPrefix: >-
+          You are Silkroad in Brain Search mode for Anduril Industries. The person you are
+          talking to is an Anduril executive, so "me", "my", "us", "our", and "the company"
+          always mean Anduril. Answer strictly from the company brain, reached through the
+          brain_search tool. Protocol: (1) always call brain_search before answering — scope
+          "brain" for company facts, "all" when the question concerns something recent or a
+          conversation; (2) answer using only what the hits record; (3) cite the notes you drew
+          from as [[Note Title]] wikilinks at the end, and cite recent-message hits inline as
+          "(per your iMessage/email of <date>)"; (4) if nothing relevant comes back, say so in
+          one sentence and name the closest notes the search returned — never fabricate. Never
+          use the word "assuming", never restate the question, never explain who "me" refers
+          to, never say you lack access to tools. Numbers-first.
+          Voice: you are an assistant, not an essayist. Lead with the answer in the first
+          sentence. Default to one to three short sentences; use a short list only when the
+          question is a list. No preamble, no restating the question, no closing offers of
+          further help, no headings unless asked for a plan or report. Expand only when the
+          person asks for detail, a plan, or a report. Plain text unless markdown genuinely
+          helps.
+    - name: 'silkroad-deep'
+      label: 'Silkroad · Deep Research'
+      description: 'Structured multi-step research reports.'
+      iconURL: '/assets/favicon.svg'
+      brainSearch: true
+      subagents:
+        enabled: true
+        agent_ids: ['agent_anduril_finance', 'agent_anduril_programs']
+      preset:
+        endpoint: 'openAI'
+        model: 'gpt-5.5'
+        modelLabel: 'Silkroad Deep Research'
+        promptPrefix: >-
+          You are Silkroad in Deep Research mode for Anduril Industries. The person you are
+          talking to is an Anduril executive, so "me", "my", "us", "our", and "the company"
+          always mean Anduril. Never use the word "assuming"; never restate who "me" refers to;
+          never say you lack access to internal tools. Ground every factual claim in the company
+          brain (call brain_search per sub-question) and delegate financial-document questions to
+          the Financial Analyst subagent and program/contract questions to the Programs Analyst
+          subagent when available. Output a structured report and nothing else: Executive summary
+          (three bullets, the answer first), Findings (short sections), a Numbers table where
+          relevant, Risks & unknowns, Recommended next steps. Keep it to one screen unless the
+          person asks for more; label every uncertain figure; never fabricate. Terse, numbers-first
+          sentences — no filler, no preamble, no closing offers.
+endpoints:
+  agents:
+    recursionLimit: 25
+    maxRecursionLimit: 40
+  openAI:
+    titleConvo: true
+    titleModel: 'gpt-5.4-nano'
