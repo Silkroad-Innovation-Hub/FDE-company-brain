@@ -264,3 +264,37 @@ export type GraphTokenResponse = {
   expires_in: number;
   scope: string;
 };
+
+/* Guardrails */
+export type TGuardrailsStatus = {
+  month: string;
+  spendUsd: number;
+  expectedUsd: number;
+  multiple: number;
+  alerted: number[];
+  byContextUsd: Record<string, number>;
+  paused: boolean;
+  pausedVia: 'budget' | 'other' | null;
+};
+
+export type TGuardrailsActivityCategory = 'approval' | 'channel' | 'guardrail' | 'brain';
+export type TGuardrailsActivityOutcome = 'success' | 'failure' | 'denied' | 'pending';
+export type TGuardrailsActivityMetadata = Record<string, string | number | boolean | null>;
+
+export type TGuardrailsActivityEntry = {
+  id: string;
+  category: TGuardrailsActivityCategory;
+  action: string;
+  outcome: TGuardrailsActivityOutcome;
+  severity: 'info' | 'warning' | 'critical';
+  actor: { type: string; id?: string; name: string };
+  target: { type: string; id?: string; name?: string };
+  metadata?: TGuardrailsActivityMetadata;
+  timestamp: string;
+};
+
+export type TGuardrailsActivity = {
+  entries: TGuardrailsActivityEntry[];
+  total: number;
+  nextCursor: string | null;
+};

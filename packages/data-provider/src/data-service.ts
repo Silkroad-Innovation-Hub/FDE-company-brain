@@ -1305,6 +1305,15 @@ export function decideApproval(
   return request.put(endpoints.approvals(approvalId), payload);
 }
 
+/* Guardrails */
+export function getGuardrailsStatus(): Promise<q.TGuardrailsStatus> {
+  return request.get(endpoints.guardrailsStatus());
+}
+
+export function getGuardrailsActivity(limit?: number): Promise<q.TGuardrailsActivity> {
+  return request.get(endpoints.guardrailsActivity(limit));
+}
+
 /* Tags */
 export function getConversationTags(): Promise<t.TConversationTagsResponse> {
   return request.get(endpoints.conversationTags());

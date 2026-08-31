@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTodosQuery } from '~/data-provider';
 import { CashChart, TriageDonut, RevenueChart, ARAgingChart, ActivityChart } from './FinanceCharts';
 import { Schedule, Payables, ActivityFeed, BankAccounts, OverdueInvoices } from './Lists';
+import { BudgetTile, Activity } from './Guardrails';
 import BrainExplorer from './Brain';
 import Actions from './Actions';
 import {
@@ -13,7 +14,6 @@ import {
   sampleRevenueSeries,
   sampleOutstandingAR,
   sampleTimeSavedHours,
-  sampleEmailsHandledWeek,
 } from './sample';
 import { useLocalize } from '~/hooks';
 import ViewToggle from './ViewToggle';
@@ -96,11 +96,7 @@ export default function AnalyticsView() {
               value={localize('com_ui_hours_short', { 0: String(sampleTimeSavedHours) })}
               hint={localize('com_ui_this_week')}
             />
-            <Stat
-              label={localize('com_ui_emails_handled')}
-              value={String(sampleEmailsHandledWeek)}
-              hint={localize('com_ui_this_week')}
-            />
+            <BudgetTile />
             <Stat
               label={localize('com_ui_open_tasks')}
               value={String(openTodoCount)}
@@ -110,6 +106,7 @@ export default function AnalyticsView() {
 
           <Section title={localize('com_ui_company_brain')}>
             <Actions />
+            <Activity />
             <BrainExplorer />
           </Section>
 

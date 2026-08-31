@@ -12,6 +12,8 @@ export * from './Todos';
 export * from './Approvals';
 /* Brain */
 export * from './Brain';
+/* Guardrails */
+export * from './Guardrails';
 export * from './Messages';
 export * from './Misc';
 export * from './Projects';

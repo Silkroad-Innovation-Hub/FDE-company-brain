@@ -482,6 +482,12 @@ export const approvals = (approvalId?: string) =>
     approvalId != null && approvalId ? `/${encodeURIComponent(approvalId)}` : ''
   }`;
 
+/* Guardrails */
+export const guardrailsStatus = () => `${BASE_URL}/api/guardrails/status`;
+
+export const guardrailsActivity = (limit?: number) =>
+  `${BASE_URL}/api/guardrails/activity${limit != null ? `?limit=${encodeURIComponent(String(limit))}` : ''}`;
+
 /* Conversation Tags */
 export const conversationTags = (tag?: string) =>
   `${BASE_URL}/api/tags${tag != null && tag ? `/${encodeURIComponent(tag)}` : ''}`;

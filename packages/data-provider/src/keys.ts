@@ -60,6 +60,8 @@ export enum QueryKeys {
   banner = 'banner',
   todos = 'todos',
   approvals = 'approvals',
+  guardrailsStatus = 'guardrailsStatus',
+  guardrailsActivity = 'guardrailsActivity',
   brainGraph = 'brainGraph',
   brainNote = 'brainNote',
   /* Memories */
