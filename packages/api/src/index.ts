@@ -5,6 +5,7 @@ export * from './artifacts';
 /* Brain */
 export * from './brain';
 export * from './channels';
+export * from './guardrails';
 /* Admin */
 export * from './admin';
 export * from './cdn';
