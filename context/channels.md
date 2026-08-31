@@ -230,6 +230,13 @@ rebuild of `packages/api`):
    `npm run channel:gmail`. Move the consent screen out of *Testing* status or the refresh
    token expires after 7 days. Until this is done the Gmail connector has never run live.
 
+4. **Since Aug 30 the connectors answer through the API server** (`context/unification.md`):
+   run `npm run channels:token` once, put the printed `SILKROAD_SERVICE_TOKEN` in `.env`,
+   and keep `npm run backend` running whenever a connector runs. Without the token the
+   connectors fall back to the old local answerer (no tools, no mirrored conversations).
+5. **Run `npm run migrate:agent-permissions` once** — the server logs "Agent permissions
+   migration required" and skips the Deep Research subagents for the owner until it is done.
+
 Kill switch: text or email yourself "pause everything" / "resume".
 
 ## Status — implemented in the fork (August 30, 2026)

@@ -34,7 +34,13 @@ decides known/merge/create and writes wikilinked vault notes, gated by
 kill-switch / owner-Q&A helpers and the iMessage (`chat.db` polling, `npm run
 channel:imessage`) and Gmail (`@googleapis/gmail`, `npm run channel:gmail`) connectors, both
 dumb raw-log appends with triage/to-dos/injection-flagging in the worker; `PUT
-/api/approvals/:id` sends/deletes Gmail drafts on approve/deny. Root `CONTEXT.md` is codebase domain language, unrelated to product
+/api/approvals/:id` sends/deletes Gmail drafts on approve/deny. Per `context/unification.md`
+(spec + Status): retrieval lives in `packages/api/src/brain/retrieval/` (embeddings in the
+`brainvectors` collection, `brain_search` tool on both chat specs, worker dedup before model
+calls); connectors answer through `POST /api/channels/answer` (service token, loops back into
+the real chat pipeline, mirrors threads as conversations); guardrails in
+`packages/api/src/guardrails/` + `channels/{policy,drafts,audit}.ts` (audit actions, draft
+allowlist, hourly budget monitor, `GET /api/guardrails/*` behind the dashboard tile/list). Root `CONTEXT.md` is codebase domain language, unrelated to product
 context. Guardrails in `context/brief.md` §6 are non-negotiable when designing features.
 Interface polish is an explicit product requirement — this is sold to executives.
 

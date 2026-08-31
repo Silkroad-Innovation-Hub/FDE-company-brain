@@ -46,6 +46,13 @@ separate worker process, so replies never wait on ingestion.
   the Gmail API with owner-only replies and a draft→approval→send hook. Both connectors are
   dumb raw-log appends; triage/to-dos/injection-flagging run in the distiller worker.
 
+  **Status (Aug 30, 2026, later):** A2 retrieval and A5 guardrails landed in the fork per
+  [`unification.md`](./unification.md) — `brain_search` over vault + raw log on both chat
+  specs, channel answers routed through the web-chat pipeline via a service-token gateway,
+  audit trail on the hash-chained log, draft-domain allowlist, hourly budget monitor with
+  owner notices, `endpoints.agents` turn caps, and a budget tile + Activity list on the
+  dashboard.
+
 **A4. Cron workflows (week 2–3).** Morning brief at 7am (triaged inbox, calendar, tasks,
 cash snapshot → iMessage). Weekly AR-chase: QuickBooks aging (read-only) → draft chase
 emails → approval via iMessage tap → send.

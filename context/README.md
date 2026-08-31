@@ -39,6 +39,11 @@ Read in this order:
    feed the raw log and answer the owner, on top of ingestion v1. **Implemented in this
    fork** (`npm run channel:imessage`, `npm run channel:gmail`; see its Status section —
    Gmail awaits OAuth credentials for a live run).
+7. [`unification.md`](./unification.md) — one brain / one agent / guardrails as code
+   (Aug 30, 2026): retrieval over vault + raw log behind the `brain_search` tool, the
+   channel gateway (`POST /api/channels/answer`) that runs the web-chat spec for iMessage
+   and email, and audit trail, draft-domain allowlist, monthly budget alert, turn caps.
+   **Built the same day** — plan first, Status section last.
 
 ## Rules for agents working in this folder
 

@@ -107,6 +107,12 @@ architecture is exactly the spec; the substrate differs:
   `injection` (parked as `flagged`, never distilled), and bulk mail/SMS is logged
   pre-resolved as `bulk` without a model call. A `ChannelState` pause flag halts the worker
   and every responder.
+- **Aug 30 update ([`unification.md`](./unification.md))**: the "dedup deviation" above is
+  closed — embeddings (`text-embedding-3-small`, `brainvectors` collection, in-process
+  cosine) now run before any model call: a settled near-duplicate raw-log hit (≥ 0.95)
+  is skipped as `known` with zero tokens, and the top-3 note hits replace the triage
+  model's title guess as distill context. Retrieval over the curated brain *and* the
+  recent raw log is live for the agent too (`brain_search`).
 
 ## What this spec originally assumed (kept for the Track A migration)
 
