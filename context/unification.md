@@ -529,3 +529,13 @@ pm2 ecosystem, Mongo backup, heartbeats at `/api/health/silkroad`), and the trus
 logged, audit CSV export, system health strip). Verified live: `npm run brief:now` produced
 a correct brief; `npm run chase:now` found the overdue Henderson invoice and recorded a
 draft-less approval (Gmail not configured on this machine).
+
+**Final live verification (Aug 30, late — on a scratch MongoDB, because Docker Desktop, which
+hosts the local Mongo, hung mid-session):** the brain worker started cleanly with the new
+wiring (vault index 28 chunks, budget monitor, brief scheduled 7:00, chase Monday 8:00,
+retrieval on); a channel answer through the gateway was recorded in the owner's audit CSV
+and activity feed (owner stamp fix confirmed); `GET /api/health/silkroad` reported live
+heartbeats for `brain-worker` and `channel-imessage`; the iMessage connector ran a full pass
+on the gateway-enabled build; the production client build succeeded. The real database was
+untouched (the connector cursor was restored). If `ECONNREFUSED 127.0.0.1:27017` appears,
+start Docker Desktop and `docker start chat-mongodb`.
