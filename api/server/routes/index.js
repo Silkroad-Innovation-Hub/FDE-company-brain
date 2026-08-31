@@ -35,6 +35,8 @@ const tags = require('./tags');
 const todos = require('./todos');
 const approvals = require('./approvals');
 const brain = require('./brain');
+const guardrails = require('./guardrails');
+const channels = require('./channels');
 const auth = require('./auth');
 const keys = require('./keys');
 const user = require('./user');
@@ -61,6 +63,8 @@ module.exports = {
   todos,
   approvals,
   brain,
+  guardrails,
+  channels,
   roles,
   oauth,
   files,

@@ -1,14 +1,18 @@
+import type { GatewayClient } from '~/channels/remote';
 import type { TodoLean } from '@librechat/data-schemas';
 import type { GmailApi, GmailProfile } from './client';
 import type { ChannelIngestMethods } from '~/channels/ingest';
 import type { BrainWorkerLogger } from '~/brain/worker';
 import type { PauseMethods } from '~/channels/pause';
+import type { NoticeMethods } from '~/channels/notices';
 import type { BrainChatFn } from '~/brain/openai';
 import type { AnswerTurn } from '~/channels/answer';
 import type { ParsedMail } from './parse';
 import { ingestChannelMessage } from '~/channels/ingest';
 import { handlePauseCommand } from '~/channels/pause';
 import { answerQuestion } from '~/channels/answer';
+import { GatewayError } from '~/channels/remote';
+import { deliverChannelNotices } from '~/channels/notices';
 import { HistoryExpiredError } from './client';
 import { parseGmailMessage } from './parse';
 
@@ -21,11 +25,13 @@ export interface GmailPollStore {
   save: (state: GmailPollState) => void;
 }
 
-export interface GmailPollMethods extends ChannelIngestMethods, PauseMethods {
+export interface GmailPollMethods extends ChannelIngestMethods, PauseMethods, NoticeMethods {
   getTodos: (user: string) => Promise<TodoLean[]>;
 }
 
 export interface GmailPollDeps {
+  /** When set, questions run through the API gateway (the web-chat agent); the local chat path is the fallback. */
+  gateway?: GatewayClient;
   api: GmailApi;
   methods: GmailPollMethods;
   chat: BrainChatFn;
@@ -50,6 +56,7 @@ export type GmailMailOutcome =
 const QUESTION_PREFIX = /^\s*silkroad:/i;
 const MAX_THREAD_TURNS = 8;
 const RECENT_FALLBACK_LIMIT = 50;
+const NOTICE_SUBJECT = 'Silkroad notice';
 
 function ownerAddress(deps: GmailPollDeps): string {
   return deps.owner.email.trim().toLowerCase();
@@ -112,21 +119,53 @@ async function respond(
   if (await deps.methods.isChannelsPaused(deps.owner.user)) {
     return 'paused';
   }
-  const history = memory.history(mail.threadId);
-  const answer = await answerQuestion(
-    {
-      chat: deps.chat,
-      model: deps.model,
-      vaultPath: deps.vaultPath,
-      methods: deps.methods,
-      now: deps.now,
-    },
-    { user: deps.owner.user, question, history, surface: 'email' },
-  );
+  const answer = await answerFor(deps, mail, question, memory);
+  if (answer == null) {
+    return 'paused';
+  }
   await replyToOwner(deps, mail, answer);
   memory.remember(mail.threadId, { fromOwner: true, text: question });
   memory.remember(mail.threadId, { fromOwner: false, text: answer });
   return 'answered';
+}
+
+/** Gateway first (same agent as web chat); null means "do not reply" (paused / gateway down). */
+async function answerFor(
+  deps: GmailPollDeps,
+  mail: ParsedMail,
+  question: string,
+  memory: ThreadMemory,
+): Promise<string | null> {
+  if (!deps.gateway) {
+    return answerQuestion(
+      {
+        chat: deps.chat,
+        model: deps.model,
+        vaultPath: deps.vaultPath,
+        methods: deps.methods,
+        now: deps.now,
+      },
+      { user: deps.owner.user, question, history: memory.history(mail.threadId), surface: 'email' },
+    );
+  }
+  try {
+    const reply = await deps.gateway.answer({
+      surface: 'email',
+      externalThreadId: mail.threadId,
+      question,
+      sender: mail.from,
+      subject: mail.subject,
+      format: 'plain',
+    });
+    return reply.text;
+  } catch (error) {
+    if (error instanceof GatewayError && error.kind === 'paused') {
+      deps.logger.info('[gmail] gateway paused — not answering');
+      return null;
+    }
+    deps.logger.error('[gmail] gateway answer failed', error);
+    return null;
+  }
 }
 
 /**
@@ -226,8 +265,36 @@ export async function initialState(
   return state;
 }
 
-/** One incremental sync; falls back to a recent-mail scan when Gmail has expired the history. */
+/** Emails pending owner notices to the owner (and only the owner — `sendReply` enforces it). */
+export async function deliverGmailNotices(deps: GmailPollDeps): Promise<number> {
+  return deliverChannelNotices({
+    methods: deps.methods,
+    user: deps.owner.user,
+    via: 'email',
+    send: async (text) => {
+      await deps.api.sendReply({ to: deps.owner.email, subject: NOTICE_SUBJECT, text });
+    },
+    logger: deps.logger,
+  });
+}
+
+/** One incremental sync plus notice delivery; the cursor advances even when delivery fails. */
 export async function syncOnce(
+  deps: GmailPollDeps,
+  state: GmailPollState,
+  memory: ThreadMemory,
+): Promise<GmailPollState> {
+  const next = await syncMail(deps, state, memory);
+  try {
+    await deliverGmailNotices(deps);
+  } catch (error) {
+    deps.logger.error('gmail: notice delivery failed', error);
+  }
+  return next;
+}
+
+/** Falls back to a recent-mail scan when Gmail has expired the history. */
+async function syncMail(
   deps: GmailPollDeps,
   state: GmailPollState,
   memory: ThreadMemory,

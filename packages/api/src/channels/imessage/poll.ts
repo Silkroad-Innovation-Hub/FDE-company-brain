@@ -1,12 +1,16 @@
 import type { BrainChatFn } from '~/brain/openai';
 import type { ChannelIngestMethods } from '~/channels/ingest';
 import type { PauseMethods } from '~/channels/pause';
+import type { NoticeMethods } from '~/channels/notices';
+import type { GatewayClient } from '~/channels/remote';
 import type { AnswerTurn } from '~/channels/answer';
 import type { SqlRunner, MessageRow } from './db';
 import { fetchNewMessages, fetchOwnHandles, fetchThreadHistory } from './db';
 import { ingestChannelMessage } from '~/channels/ingest';
 import { handlePauseCommand } from '~/channels/pause';
 import { answerQuestion } from '~/channels/answer';
+import { GatewayError } from '~/channels/remote';
+import { deliverChannelNotices } from '~/channels/notices';
 import { messageText } from './decode';
 
 /** Prefix on every agent reply so the connector never re-ingests or re-answers its own text. */
@@ -24,7 +28,7 @@ export interface ImessageLogger {
   error: (message: string, error?: unknown) => void;
 }
 
-export interface ImessageMethods extends ChannelIngestMethods, PauseMethods {
+export interface ImessageMethods extends ChannelIngestMethods, PauseMethods, NoticeMethods {
   getTodos: Parameters<typeof answerQuestion>[0]['methods']['getTodos'];
 }
 
@@ -32,6 +36,8 @@ export interface ImessageMethods extends ChannelIngestMethods, PauseMethods {
 export type ImessageSend = (handle: string, text: string) => void;
 
 export interface ImessageDeps {
+  /** When set, questions run through the API gateway (the web-chat agent); the local chat path is the fallback. */
+  gateway?: GatewayClient;
   sql: SqlRunner;
   send: ImessageSend;
   methods: ImessageMethods;
@@ -40,6 +46,8 @@ export interface ImessageDeps {
   vaultPath: string;
   user: string;
   ownHandles: Set<string>;
+  /** Where agent-initiated notices go; defaults to the first own handle (the self-chat). */
+  noticeHandle?: string;
   logger: ImessageLogger;
   now?: () => Date;
 }
@@ -128,23 +136,55 @@ async function respond(deps: ImessageDeps, row: MessageRow, text: string): Promi
     deps.logger.info('[imessage] paused — not answering');
     return;
   }
-  const answer = await answerQuestion(
-    {
-      chat: deps.chat,
-      model: deps.model,
-      vaultPath: deps.vaultPath,
-      methods: deps.methods,
-      now: deps.now,
-    },
-    {
-      user: deps.user,
-      question: text,
-      history: threadHistory(deps.sql, row),
-      surface: SURFACE_LABEL,
-    },
-  );
+  const answer = await answerFor(deps, row, text);
+  if (answer == null) {
+    return;
+  }
   deps.send(target, answer);
   deps.logger.info(`[imessage] replied in ${target}: ${answer.slice(0, 80)}`);
+}
+
+/** Gateway first (same agent as web chat); null means "do not reply" (paused / gateway down). */
+async function answerFor(
+  deps: ImessageDeps,
+  row: MessageRow,
+  text: string,
+): Promise<string | null> {
+  if (!deps.gateway) {
+    return answerQuestion(
+      {
+        chat: deps.chat,
+        model: deps.model,
+        vaultPath: deps.vaultPath,
+        methods: deps.methods,
+        now: deps.now,
+      },
+      {
+        user: deps.user,
+        question: text,
+        history: threadHistory(deps.sql, row),
+        surface: SURFACE_LABEL,
+      },
+    );
+  }
+  try {
+    const reply = await deps.gateway.answer({
+      surface: 'imessage',
+      externalThreadId: row.chat_guid ?? row.handle ?? 'self',
+      question: text,
+      sender: row.handle ?? undefined,
+      subject: row.chat_name ?? undefined,
+      format: 'plain',
+    });
+    return reply.text;
+  } catch (error) {
+    if (error instanceof GatewayError && error.kind === 'paused') {
+      deps.logger.info('[imessage] gateway paused — not answering');
+      return null;
+    }
+    deps.logger.error('[imessage] gateway answer failed', error);
+    return null;
+  }
 }
 
 /** Ingests one batch of rows and answers owner questions; returns the highest ROWID seen. */
@@ -183,12 +223,37 @@ export async function processRows(deps: ImessageDeps, rows: MessageRow[]): Promi
   return last;
 }
 
-/** One poll: fetch rows after the cursor, process them, and return the advanced state. */
-export async function pollOnce(deps: ImessageDeps, state: ImessageState): Promise<ImessageState> {
+async function ingestNewRows(deps: ImessageDeps, state: ImessageState): Promise<ImessageState> {
   const rows = fetchNewMessages(deps.sql, state.lastRowId);
   if (rows.length === 0) {
     return state;
   }
   const last = await processRows(deps, rows);
   return last > state.lastRowId ? { lastRowId: last } : state;
+}
+
+/** Delivers pending owner notices into the self-chat through the guarded sender. */
+export async function deliverImessageNotices(deps: ImessageDeps): Promise<number> {
+  const target = deps.noticeHandle ?? [...deps.ownHandles][0];
+  if (!target) {
+    return 0;
+  }
+  return deliverChannelNotices({
+    methods: deps.methods,
+    user: deps.user,
+    via: 'imessage',
+    send: (text) => deps.send(target, text),
+    logger: deps.logger,
+  });
+}
+
+/** One poll: fetch rows after the cursor, process them, deliver notices, and return the advanced state. */
+export async function pollOnce(deps: ImessageDeps, state: ImessageState): Promise<ImessageState> {
+  const next = await ingestNewRows(deps, state);
+  try {
+    await deliverImessageNotices(deps);
+  } catch (error) {
+    deps.logger.error('[imessage] notice delivery failed', error);
+  }
+  return next;
 }

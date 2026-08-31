@@ -84,6 +84,31 @@ const trusted_proxy = Number(TRUST_PROXY) || 1; /* trust first proxy by default 
 const app = express();
 let serverReady = false;
 
+/**
+ * One retrieval service for the brain_search tool (context/unification.md §1):
+ * embeddings over vault notes and the recent raw log, shared by every request.
+ */
+const attachBrainRetriever = () => {
+  if (!process.env.OPENAI_API_KEY) {
+    logger.warn('brain: OPENAI_API_KEY unset — brain_search is not configured');
+    return;
+  }
+  const { createBrainRetriever, createBrainEmbed } = require('@librechat/api');
+  const methods = require('~/models');
+  app.locals.brainRetriever = createBrainRetriever({
+    methods,
+    embed: createBrainEmbed({
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.BRAIN_EMBED_MODEL,
+    }),
+    logger,
+    options: {
+      logDays: Number(process.env.BRAIN_RETRIEVAL_LOG_DAYS) || undefined,
+      maxVectors: Number(process.env.BRAIN_RETRIEVAL_MAX_VECTORS) || undefined,
+    },
+  });
+};
+
 const SERVER_NOT_READY_CODE = 'SERVER_NOT_READY';
 const CHAT_START_RETRY_AFTER_SECONDS = '1';
 
@@ -332,6 +357,7 @@ const startServer = async () => {
   app.use('/images/', createValidateImageRequest(appConfig.secureImageLinks), routes.staticRoute);
   app.use('/api/share', preAuthTenantMiddleware, routes.share);
   app.use('/api/roles', routes.roles);
+  attachBrainRetriever();
   app.use('/api/agents/chat', rejectChatStartsUntilReady);
   app.use('/api/agents', routes.agents);
   app.use('/api/banner', routes.banner);
@@ -342,6 +368,8 @@ const startServer = async () => {
   app.use('/api/todos', routes.todos);
   app.use('/api/approvals', routes.approvals);
   app.use('/api/brain', routes.brain);
+  app.use('/api/guardrails', routes.guardrails);
+  app.use('/api/channels', routes.channels);
   app.use('/api/mcp', routes.mcp);
   app.use('/api/rum', routes.rum);
 

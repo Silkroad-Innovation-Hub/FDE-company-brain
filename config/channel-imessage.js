@@ -13,6 +13,7 @@ const mongoose = require('mongoose');
 const { createModels, createMethods, logger } = require('@librechat/data-schemas');
 const {
   createBrainChat,
+  createGatewayClient,
   createSqlRunner,
   resolveOwnHandles,
   guardedSender,
@@ -24,6 +25,20 @@ const connect = require('./connect');
 const STATE_FILE = path.resolve(__dirname, '..', 'data', 'imessage-ingest-state.json');
 const vaultPath = process.env.BRAIN_VAULT_PATH || path.resolve(__dirname, '..', 'brain');
 const model = process.env.BRAIN_ANSWER_MODEL || 'gpt-5.5';
+
+/** Answers go through the API gateway (the web-chat agent) when a service token is configured. */
+function gatewayClient() {
+  const token = process.env.SILKROAD_SERVICE_TOKEN;
+  if (!token) {
+    logger.warn('[imessage] SILKROAD_SERVICE_TOKEN unset — answering with the local chat fallback');
+    return undefined;
+  }
+  return createGatewayClient({
+    url: process.env.SILKROAD_API_URL || 'http://127.0.0.1:3080',
+    token,
+    timeoutMs: Number(process.env.SILKROAD_CHANNEL_TIMEOUT_MS) + 10_000 || undefined,
+  });
+}
 const intervalMs = Number(process.env.IMESSAGE_POLL_MS) || 15_000;
 const backfill = Number(process.env.INGEST_BACKFILL) || 0;
 
@@ -75,7 +90,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   }
   const sql = createSqlRunner();
   const ownHandles = resolveOwnHandles(sql, process.env.SILKROAD_AGENT_HANDLES || '');
+  const gateway = gatewayClient();
   const deps = {
+    gateway,
     sql,
     send: guardedSender(ownHandles, sendViaMessages),
     methods,

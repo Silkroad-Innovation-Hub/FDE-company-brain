@@ -12,7 +12,12 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const mongoose = require('mongoose');
 const { createModels, createMethods, logger } = require('@librechat/data-schemas');
-const { createBrainChat, createGmailClient, startGmailPoller } = require('@librechat/api');
+const {
+  createBrainChat,
+  createGatewayClient,
+  createGmailClient,
+  startGmailPoller,
+} = require('@librechat/api');
 const connect = require('./connect');
 
 const STATE_FILE = path.resolve(__dirname, '..', 'data', 'gmail-ingest-state.json');
@@ -21,6 +26,20 @@ const intervalMs = Number(process.env.GMAIL_POLL_MS) || 60_000;
 const backfill = Number(process.env.INGEST_BACKFILL) || 0;
 const once = process.env.INGEST_ONCE === 'true';
 const model = process.env.BRAIN_ANSWER_MODEL || 'gpt-5.5';
+
+/** Answers go through the API gateway (the web-chat agent) when a service token is configured. */
+function gatewayClient() {
+  const token = process.env.SILKROAD_SERVICE_TOKEN;
+  if (!token) {
+    logger.warn('[gmail] SILKROAD_SERVICE_TOKEN unset — answering with the local chat fallback');
+    return undefined;
+  }
+  return createGatewayClient({
+    url: process.env.SILKROAD_API_URL || 'http://127.0.0.1:3080',
+    token,
+    timeoutMs: Number(process.env.SILKROAD_CHANNEL_TIMEOUT_MS) + 10_000 || undefined,
+  });
+}
 
 const store = {
   load() {
@@ -59,6 +78,7 @@ function requireEnv(name) {
   const api = createGmailClient({ clientId, clientSecret, refreshToken, ownerEmail: email });
   const chat = createBrainChat({ apiKey: process.env.OPENAI_API_KEY, json: false });
   const handle = await startGmailPoller({
+    gateway: gatewayClient(),
     api,
     methods,
     chat,
