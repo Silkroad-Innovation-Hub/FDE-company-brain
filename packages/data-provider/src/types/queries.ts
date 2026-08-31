@@ -298,3 +298,59 @@ export type TGuardrailsActivity = {
   total: number;
   nextCursor: string | null;
 };
+
+/* Brain approvals (memory writes awaiting the owner) */
+export type TBrainApprovalOutcome = 'ephemeral' | 'known' | 'merge' | 'create' | 'flagged' | 'bulk';
+
+export type TBrainApproval = {
+  _id: string;
+  user: string;
+  surface: 'chat' | 'email' | 'imessage';
+  direction: 'inbound' | 'outbound';
+  messageId: string;
+  text: string;
+  sender?: string;
+  subject?: string;
+  status: string;
+  outcome?: TBrainApprovalOutcome;
+  noteId?: string;
+  noteType?: string;
+  noteContent?: string;
+  todoItems?: string[];
+  reason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TBrainApprovalsResponse = TBrainApproval[];
+
+export type TBrainApprovalDecision = 'approve' | 'reject';
+
+/* Workflows (trust ramp) */
+export type TWorkflowName = 'brief' | 'chase';
+
+export type TWorkflowPolicy = {
+  workflow: TWorkflowName;
+  canAutoSend: boolean;
+  enabled: boolean;
+  autoSend: boolean;
+  graduatedAt: string | null;
+  lastRunAt: string | null;
+  lastRunSummary: string | null;
+};
+
+export type TWorkflowPoliciesResponse = TWorkflowPolicy[];
+
+export type TWorkflowPolicyUpdate = { enabled?: boolean; autoSend?: boolean };
+
+export type TWorkflowProcessHealth = {
+  name: 'worker' | 'imessage' | 'gmail';
+  process: string | null;
+  host: string | null;
+  lastSeenAt: string | null;
+  alive: boolean;
+};
+
+export type TWorkflowsHealth = { host: string; processes: TWorkflowProcessHealth[] };
+
+export type TWorkflowRunResponse = { workflow?: string; status?: string; summary?: string };

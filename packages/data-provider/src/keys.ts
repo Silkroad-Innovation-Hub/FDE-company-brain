@@ -64,6 +64,9 @@ export enum QueryKeys {
   guardrailsActivity = 'guardrailsActivity',
   brainGraph = 'brainGraph',
   brainNote = 'brainNote',
+  brainApprovals = 'brainApprovals',
+  workflowPolicies = 'workflowPolicies',
+  workflowsHealth = 'workflowsHealth',
   /* Memories */
   memories = 'memories',
   principalSearch = 'principalSearch',

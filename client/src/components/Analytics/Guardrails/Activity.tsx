@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Brain, ShieldAlert, CheckCircle2, MessageSquareText } from 'lucide-react';
-import { Button } from '@librechat/client';
+import { Brain, Download, ShieldAlert, CheckCircle2, MessageSquareText } from 'lucide-react';
+import { Button, useToastContext } from '@librechat/client';
+import { dataService } from 'librechat-data-provider';
 import type {
   TGuardrailsActivityEntry,
   TGuardrailsActivityCategory,
@@ -132,9 +133,35 @@ function Row({ entry }: { entry: TGuardrailsActivityEntry }) {
   );
 }
 
+/** Downloads the owner's audit trail as CSV through the authenticated API client. */
+async function downloadActivityCsv(): Promise<void> {
+  const blob = await dataService.getGuardrailsActivityCsv();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `silkroad-activity-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function Activity() {
   const localize = useLocalize();
+  const { showToast } = useToastContext();
   const [limit, setLimit] = useState(INITIAL_LIMIT);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadActivityCsv();
+    } catch {
+      showToast({ message: localize('com_ui_export_failed'), status: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
   const { data, isLoading, isError } = useGuardrailsActivityQuery(limit);
   const entries = data?.entries ?? [];
   const canExpand = limit === INITIAL_LIMIT && entries.length >= INITIAL_LIMIT;
@@ -146,7 +173,21 @@ export default function Activity() {
     >
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium text-text-primary">{localize('com_ui_activity')}</h2>
-        <span className="text-xs text-text-tertiary">{localize('com_ui_activity_hint')}</span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-xs text-text-tertiary sm:inline">
+            {localize('com_ui_activity_hint')}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exporting}
+            onClick={handleExport}
+            aria-label={localize('com_ui_export_audit_csv')}
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            {localize('com_ui_export_audit_csv')}
+          </Button>
+        </div>
       </div>
       {isLoading && (
         <div className="flex flex-col gap-2" aria-busy="true">

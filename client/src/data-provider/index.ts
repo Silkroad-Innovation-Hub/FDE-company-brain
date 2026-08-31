@@ -14,6 +14,8 @@ export * from './Approvals';
 export * from './Brain';
 /* Guardrails */
 export * from './Guardrails';
+/* Workflows */
+export * from './Workflows';
 export * from './Messages';
 export * from './Misc';
 export * from './Projects';

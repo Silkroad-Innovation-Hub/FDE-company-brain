@@ -472,6 +472,11 @@ export const brainGraph = () => `${BASE_URL}/api/brain/graph`;
 export const brainNote = (noteId: string) =>
   `${BASE_URL}/api/brain/note/${encodeURIComponent(noteId)}`;
 
+export const brainApprovals = () => `${BASE_URL}/api/brain/approvals`;
+
+export const brainApprovalDecision = (brainLogId: string, decision: 'approve' | 'reject') =>
+  `${BASE_URL}/api/brain/approvals/${encodeURIComponent(brainLogId)}/${decision}`;
+
 /* Todos */
 export const todos = (todoId?: string) =>
   `${BASE_URL}/api/todos${todoId != null && todoId ? `/${encodeURIComponent(todoId)}` : ''}`;
@@ -487,6 +492,19 @@ export const guardrailsStatus = () => `${BASE_URL}/api/guardrails/status`;
 
 export const guardrailsActivity = (limit?: number) =>
   `${BASE_URL}/api/guardrails/activity${limit != null ? `?limit=${encodeURIComponent(String(limit))}` : ''}`;
+
+export const guardrailsActivityCsv = () => `${BASE_URL}/api/guardrails/activity.csv`;
+
+/* Workflows */
+export const workflowPolicies = (workflow?: string) =>
+  `${BASE_URL}/api/workflows/policies${
+    workflow != null && workflow ? `/${encodeURIComponent(workflow)}` : ''
+  }`;
+
+export const workflowsHealth = () => `${BASE_URL}/api/workflows/health`;
+
+export const workflowRun = (workflow: string) =>
+  `${BASE_URL}/api/${encodeURIComponent(workflow)}/run`;
 
 /* Conversation Tags */
 export const conversationTags = (tag?: string) =>

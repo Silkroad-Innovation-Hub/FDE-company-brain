@@ -1272,6 +1272,17 @@ export function getBrainNote(noteId: string): Promise<t.TBrainNote> {
   return request.get(endpoints.brainNote(noteId));
 }
 
+export function getBrainApprovals(): Promise<q.TBrainApprovalsResponse> {
+  return request.get(endpoints.brainApprovals());
+}
+
+export function decideBrainApproval(
+  brainLogId: string,
+  decision: q.TBrainApprovalDecision,
+): Promise<q.TBrainApproval> {
+  return request.post(endpoints.brainApprovalDecision(brainLogId, decision), {});
+}
+
 /* Todos */
 export function getTodos(): Promise<t.TTodosResponse> {
   return request.get(endpoints.todos());
@@ -1312,6 +1323,30 @@ export function getGuardrailsStatus(): Promise<q.TGuardrailsStatus> {
 
 export function getGuardrailsActivity(limit?: number): Promise<q.TGuardrailsActivity> {
   return request.get(endpoints.guardrailsActivity(limit));
+}
+
+export function getGuardrailsActivityCsv(): Promise<Blob> {
+  return request.get(endpoints.guardrailsActivityCsv(), { responseType: 'blob' });
+}
+
+/* Workflows */
+export function getWorkflowPolicies(): Promise<q.TWorkflowPoliciesResponse> {
+  return request.get(endpoints.workflowPolicies());
+}
+
+export function updateWorkflowPolicy(
+  workflow: q.TWorkflowName,
+  payload: q.TWorkflowPolicyUpdate,
+): Promise<q.TWorkflowPolicy> {
+  return request.put(endpoints.workflowPolicies(workflow), payload);
+}
+
+export function getWorkflowsHealth(): Promise<q.TWorkflowsHealth> {
+  return request.get(endpoints.workflowsHealth());
+}
+
+export function runWorkflow(workflow: q.TWorkflowName): Promise<q.TWorkflowRunResponse> {
+  return request.post(endpoints.workflowRun(workflow), {});
 }
 
 /* Tags */

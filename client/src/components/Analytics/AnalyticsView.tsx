@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useTodosQuery } from '~/data-provider';
 import { CashChart, TriageDonut, RevenueChart, ARAgingChart, ActivityChart } from './FinanceCharts';
 import { Schedule, Payables, ActivityFeed, BankAccounts, OverdueInvoices } from './Lists';
-import { BudgetTile, Activity } from './Guardrails';
+import { BudgetTile, Activity, Workflows, Health } from './Guardrails';
 import BrainExplorer from './Brain';
 import Actions from './Actions';
 import {
@@ -63,6 +63,9 @@ export default function AnalyticsView() {
             <h1 className="text-xl font-semibold text-text-primary">
               {localize('com_ui_analytics')}
             </h1>
+            <div className="pr-12">
+              <Health />
+            </div>
           </header>
 
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -106,6 +109,7 @@ export default function AnalyticsView() {
 
           <Section title={localize('com_ui_company_brain')}>
             <Actions />
+            <Workflows />
             <Activity />
             <BrainExplorer />
           </Section>
