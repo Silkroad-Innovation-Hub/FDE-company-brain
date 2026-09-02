@@ -18,6 +18,7 @@ export const AGENT_MARKER = '🧠';
 
 const HISTORY_TURNS = 8;
 const HISTORY_CHARS = 400;
+const ECHO_WINDOW_MS = 2 * 60 * 1000;
 const SURFACE_LABEL = 'iMessage';
 const SHORT_CODE = /^\d{4,6}$/;
 const BULK_FOOTER =
@@ -35,11 +36,20 @@ export interface ImessageMethods extends ChannelIngestMethods, PauseMethods, Not
 /** Sends `text` to `handle`; implementations must reject handles outside the own-handle set. */
 export type ImessageSend = (handle: string, text: string) => void;
 
+/** Remembers recently answered (chat, text) pairs across polls. */
+export interface EchoGuard {
+  /** True when the same text was already answered in this chat inside the echo window. */
+  seen: (key: string, at: number) => boolean;
+  /** Records a reply so the text's other copy is skipped. */
+  mark: (key: string, at: number) => void;
+}
+
 export interface ImessageDeps {
   /** When set, questions run through the API gateway (the web-chat agent); the local chat path is the fallback. */
   gateway?: GatewayClient;
   sql: SqlRunner;
   send: ImessageSend;
+  echo: EchoGuard;
   methods: ImessageMethods;
   chat: BrainChatFn;
   model: string;
@@ -54,6 +64,32 @@ export interface ImessageDeps {
 
 export interface ImessageState {
   lastRowId: number;
+}
+
+/**
+ * A self-chat stores every owner text twice — the sent copy (`is_from_me = 1`) and the
+ * received echo — often in different polls. The guard keeps one reply per text.
+ */
+export function createEchoGuard(windowMs: number = ECHO_WINDOW_MS): EchoGuard {
+  const answered = new Map<string, number>();
+  return {
+    seen(key: string, at: number): boolean {
+      const previous = answered.get(key);
+      return previous != null && at - previous <= windowMs;
+    },
+    mark(key: string, at: number): void {
+      for (const [entry, time] of answered) {
+        if (at - time > windowMs) {
+          answered.delete(entry);
+        }
+      }
+      answered.set(key, at);
+    },
+  };
+}
+
+function echoKey(row: MessageRow, text: string): string {
+  return `${String(replyTarget(row) ?? '').toLowerCase()}|${text.trim().toLowerCase()}`;
 }
 
 /** Own account handles plus any configured extras, normalised for comparison. */
@@ -121,27 +157,29 @@ export function threadHistory(sql: SqlRunner, row: MessageRow): AnswerTurn[] {
     .reverse();
 }
 
-async function respond(deps: ImessageDeps, row: MessageRow, text: string): Promise<void> {
+/** Answers one owner text; resolves true when something was sent. */
+async function respond(deps: ImessageDeps, row: MessageRow, text: string): Promise<boolean> {
   const target = replyTarget(row);
   if (!target) {
-    return;
+    return false;
   }
   const ack = await handlePauseCommand(deps.methods, deps.user, text, 'imessage');
   if (ack) {
     deps.send(target, ack);
     deps.logger.info(`[imessage] kill switch: ${ack}`);
-    return;
+    return true;
   }
   if (await deps.methods.isChannelsPaused(deps.user)) {
     deps.logger.info('[imessage] paused — not answering');
-    return;
+    return false;
   }
   const answer = await answerFor(deps, row, text);
   if (answer == null) {
-    return;
+    return false;
   }
   deps.send(target, answer);
   deps.logger.info(`[imessage] replied in ${target}: ${answer.slice(0, 80)}`);
+  return true;
 }
 
 /** Gateway first (same agent as web chat); null means "do not reply" (paused / gateway down). */
@@ -214,8 +252,16 @@ export async function processRows(deps: ImessageDeps, rows: MessageRow[]): Promi
     if (fromAgent || !isAgentChat(row, deps.ownHandles)) {
       continue;
     }
+    const key = echoKey(row, text);
+    const at = (deps.now?.() ?? new Date()).getTime();
+    if (deps.echo.seen(key, at)) {
+      deps.logger.info(`[imessage] skipped self-chat echo #${row.rowid}`);
+      continue;
+    }
     try {
-      await respond(deps, row, text);
+      if (await respond(deps, row, text)) {
+        deps.echo.mark(key, at);
+      }
     } catch (error) {
       deps.logger.error('[imessage] reply failed', error);
     }

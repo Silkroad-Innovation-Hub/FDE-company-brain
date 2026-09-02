@@ -13,6 +13,7 @@ const mongoose = require('mongoose');
 const { createModels, createMethods, logger } = require('@librechat/data-schemas');
 const {
   createBrainChat,
+  createEchoGuard,
   createGatewayClient,
   createSqlRunner,
   resolveOwnHandles,
@@ -97,6 +98,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     gateway,
     sql,
     send: guardedSender(ownHandles, sendViaMessages),
+    echo: createEchoGuard(),
     methods,
     chat: createBrainChat({ apiKey: process.env.OPENAI_API_KEY, json: false }),
     model,
