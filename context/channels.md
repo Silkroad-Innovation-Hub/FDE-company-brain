@@ -228,7 +228,11 @@ rebuild of `packages/api`):
    Gmail API enabled → put `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` in `.env` → run
    `npm run gmail:auth`, paste the printed `GMAIL_REFRESH_TOKEN=` line into `.env` → then
    `npm run channel:gmail`. Move the consent screen out of *Testing* status or the refresh
-   token expires after 7 days. Until this is done the Gmail connector has never run live.
+   token expires after 7 days. **Done Sep 2, 2026**: Google Cloud project `silkroad-507419`
+   (personal gmail.com account, no organisation), Gmail + Calendar APIs enabled, Desktop
+   client "Silkroad connector", consent screen *External / Testing* with the owner as the
+   only test user — so the refresh token expires Sep 9, 2026 unless the app is published;
+   re-run `npm run gmail:auth` then. The connector ran live from history 535805.
 
 4. **Since Aug 30 the connectors answer through the API server** (`context/unification.md`):
    `SILKROAD_SERVICE_TOKEN` is in `.env` (generated Aug 30 — rotate with
@@ -242,6 +246,10 @@ rebuild of `packages/api`):
 6. The worker now also runs the **morning brief** (7:00 local) and the **weekly invoice
    chase** (Monday 8:00); both arrive as notices over iMessage/email. Re-run
    `npm run gmail:auth` once Gmail is set up so the token also carries the calendar scope.
+
+7. Local Mongo is the `silkroad-mongo` Docker container (publishes 127.0.0.1:27017; the
+   compose `chat-mongodb` does not publish a host port). The API binds `localhost` → `::1`
+   on this Mac, so `.env` carries `SILKROAD_API_URL=http://[::1]:3080` for the connectors.
 
 Kill switch: text or email yourself "pause everything" / "resume".
 
