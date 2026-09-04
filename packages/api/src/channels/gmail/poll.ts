@@ -6,15 +6,17 @@ import type { BrainWorkerLogger } from '~/brain/worker';
 import type { PauseMethods } from '~/channels/pause';
 import type { NoticeMethods } from '~/channels/notices';
 import type { BrainChatFn } from '~/brain/openai';
-import type { AnswerTurn } from '~/channels/answer';
 import type { ParsedMail } from './parse';
 import { ingestChannelMessage } from '~/channels/ingest';
 import { handlePauseCommand } from '~/channels/pause';
 import { answerQuestion } from '~/channels/answer';
 import { GatewayError } from '~/channels/remote';
 import { deliverChannelNotices } from '~/channels/notices';
+import { ThreadMemory } from '~/channels/memory';
 import { HistoryExpiredError } from './client';
 import { parseGmailMessage } from './parse';
+
+export { ThreadMemory };
 
 export interface GmailPollState {
   historyId: string;
@@ -54,7 +56,6 @@ export type GmailMailOutcome =
   | 'failed';
 
 const QUESTION_PREFIX = /^\s*silkroad:/i;
-const MAX_THREAD_TURNS = 8;
 const RECENT_FALLBACK_LIMIT = 50;
 const NOTICE_SUBJECT = 'Silkroad notice';
 
@@ -77,21 +78,6 @@ export function isOwnerQuestion(mail: ParsedMail, ownerEmail: string): boolean {
 function replySubject(subject: string): string {
   const bare = subject.replace(QUESTION_PREFIX, '').trim();
   return /^re:/i.test(bare) ? bare : `Re: ${bare}`;
-}
-
-/** Per-process thread memory so follow-up questions in one thread see earlier turns. */
-export class ThreadMemory {
-  private readonly turns = new Map<string, AnswerTurn[]>();
-
-  remember(threadId: string, turn: AnswerTurn): void {
-    const history = this.turns.get(threadId) ?? [];
-    history.push(turn);
-    this.turns.set(threadId, history.slice(-MAX_THREAD_TURNS));
-  }
-
-  history(threadId: string): AnswerTurn[] {
-    return [...(this.turns.get(threadId) ?? [])];
-  }
 }
 
 async function replyToOwner(deps: GmailPollDeps, mail: ParsedMail, text: string): Promise<void> {
