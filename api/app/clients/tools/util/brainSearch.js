@@ -4,6 +4,7 @@ const { tool } = require('@librechat/agents/langchain/tools');
 const { Tools } = require('librechat-data-provider');
 
 const HIT_LIMIT = 8;
+const TODO_LIMIT = 12;
 const SCOPE_SOURCES = {
   brain: ['note'],
   recent: ['log'],
@@ -52,14 +53,36 @@ function formatHits(hits) {
   return hits.map((hit, index) => `${index + 1}. ${formatHeading(hit)}\n${hit.text}`).join('\n\n');
 }
 
+/** The owner's open to-dos, appended to every search so the agent always knows them. */
+async function openTodos(getTodos, userId) {
+  if (!getTodos) {
+    return [];
+  }
+  try {
+    const todos = await getTodos(userId);
+    return todos.filter((todo) => !todo.done).slice(0, TODO_LIMIT);
+  } catch (error) {
+    logger.error(`[${Tools.brain_search}] to-dos unavailable`, error);
+    return [];
+  }
+}
+
+function formatTodos(todos) {
+  if (todos.length === 0) {
+    return '';
+  }
+  const lines = todos.map((todo) => `- ${todo.text}`).join('\n');
+  return `\n\nOwner's open to-dos (the to-do list, authoritative):\n${lines}`;
+}
+
 /**
  * Company-brain search over curated notes and the recent raw log. The
  * retriever is the process-wide `BrainRetriever` (app.locals.brainRetriever);
  * when it is absent the tool degrades to a plain notice instead of throwing.
  *
- * @param {{ userId: string, retriever?: import('@librechat/api').BrainRetriever }} params
+ * @param {{ userId: string, retriever?: import('@librechat/api').BrainRetriever, getTodos?: (user: string) => Promise<Array<{ text: string, done: boolean }>> }} params
  */
-function createBrainSearchTool({ userId, retriever }) {
+function createBrainSearchTool({ userId, retriever, getTodos }) {
   return tool(
     async ({ query, scope }) => {
       if (!retriever) {
@@ -73,13 +96,17 @@ function createBrainSearchTool({ userId, retriever }) {
         logger.error(`[${Tools.brain_search}] search failed`, error);
         return ['Brain search failed; answer from the conversation only.', undefined];
       }
+      const todos = await openTodos(getTodos, userId);
+      const todoText = formatTodos(todos);
+      const todoArtifact = todos.map((todo) => todo.text);
       if (hits.length === 0) {
         return [
-          'No brain notes or recent messages matched the query.',
-          { [Tools.brain_search]: { hits: [] } },
+          `No brain notes or recent messages matched the query.${todoText}`,
+          { [Tools.brain_search]: { hits: [], todos: todoArtifact } },
         ];
       }
       const artifact = {
+        todos: todoArtifact,
         hits: hits.map((hit) => ({
           kind: hit.kind,
           refId: hit.refId,
@@ -90,7 +117,7 @@ function createBrainSearchTool({ userId, retriever }) {
           sourceAt: hit.sourceAt,
         })),
       };
-      return [formatHits(hits), { [Tools.brain_search]: artifact }];
+      return [`${formatHits(hits)}${todoText}`, { [Tools.brain_search]: artifact }];
     },
     {
       name: Tools.brain_search,

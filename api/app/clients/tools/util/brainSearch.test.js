@@ -62,6 +62,42 @@ describe('brain_search tool', () => {
     expect(artifact[Tools.brain_search].hits).toEqual([]);
   });
 
+  it("appends the owner's open to-dos to every result, even an empty one", async () => {
+    const getTodos = jest.fn(async () => [
+      { text: 'Review Q3 pricing with accountant', done: false },
+      { text: 'Chase the Henderson invoice', done: true },
+    ]);
+    const retriever = { search: jest.fn(async () => [noteHit]) };
+    const brainSearch = createBrainSearchTool({ userId: 'u1', retriever, getTodos });
+    const [text, artifact] = await call(brainSearch, { query: 'priorities' });
+    expect(text).toContain('[[Fury]]');
+    expect(text).toContain("Owner's open to-dos");
+    expect(text).toContain('- Review Q3 pricing with accountant');
+    expect(text).not.toContain('Henderson');
+    expect(artifact[Tools.brain_search].todos).toEqual(['Review Q3 pricing with accountant']);
+    expect(getTodos).toHaveBeenCalledWith('u1');
+
+    const empty = createBrainSearchTool({
+      userId: 'u1',
+      retriever: { search: async () => [] },
+      getTodos,
+    });
+    const [emptyText] = await call(empty, { query: 'todo' });
+    expect(emptyText).toMatch(/No brain notes/);
+    expect(emptyText).toContain('- Review Q3 pricing with accountant');
+
+    const broken = createBrainSearchTool({
+      userId: 'u1',
+      retriever: { search: async () => [noteHit] },
+      getTodos: async () => {
+        throw new Error('db down');
+      },
+    });
+    const [brokenText] = await call(broken, { query: 'q' });
+    expect(brokenText).toContain('[[Fury]]');
+    expect(brokenText).not.toContain('to-dos');
+  });
+
   it('never throws when the retriever is missing or failing', async () => {
     const missing = createBrainSearchTool({ userId: 'u1', retriever: undefined });
     expect(await call(missing, { query: 'q' })).toEqual([
