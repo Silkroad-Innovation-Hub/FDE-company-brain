@@ -11,4 +11,5 @@ export * from './remote';
 export * from './gateway';
 export * from './imessage';
 export * from './gmail';
+export * from './photon';
 export * from './memory';

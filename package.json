@@ -43,6 +43,8 @@
     "brain:worker": "node config/brain-worker.js",
     "channel:imessage": "node config/channel-imessage.js",
     "channel:gmail": "node config/channel-gmail.js",
+    "channel:photon": "node config/channel-photon.js",
+    "photon:hello": "node config/photon-hello.js",
     "gmail:auth": "node config/gmail-auth.js",
     "channels:token": "node config/channels-token.js",
     "brief:now": "node config/brief-now.js",

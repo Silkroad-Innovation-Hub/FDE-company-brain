@@ -23,6 +23,12 @@
         "types": "./dist/credentials.d.cts",
         "default": "./dist/credentials.cjs"
       }
+    },
+    "./photon": {
+      "require": {
+        "types": "./dist/photon.d.cts",
+        "default": "./dist/photon.cjs"
+      }
     }
   },
   "scripts": {
@@ -170,6 +176,8 @@
     "@googleapis/gmail": "^18.0.0",
     "@langchain/langgraph-checkpoint": "^1.1.2",
     "@langchain/langgraph-checkpoint-mongodb": "^1.4.0",
+    "@spectrum-ts/core": "12.8.0",
+    "@spectrum-ts/imessage": "12.8.0",
     "cluster-key-slot": "^1.1.2",
     "proxy-from-env": "^2.1.0"
   }

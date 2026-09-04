@@ -1,6 +1,6 @@
 import type { ChannelNoticeLean } from '@librechat/data-schemas';
 
-export type NoticeChannel = 'imessage' | 'email';
+export type NoticeChannel = 'imessage' | 'photon' | 'email';
 
 export interface NoticeMethods {
   claimChannelNotices: (
