@@ -1,4 +1,4 @@
-import type { GatewayClient } from '~/channels/remote';
+import type { GatewayClient, GatewayDecision, DraftDecision } from '~/channels/remote';
 import type { TodoLean } from '@librechat/data-schemas';
 import type { ChannelIngestMethods } from '~/channels/ingest';
 import type { PauseMethods } from '~/channels/pause';
@@ -35,6 +35,7 @@ export type PhotonOutcome =
   | 'stranger'
   | 'duplicate'
   | 'acknowledged'
+  | 'decided'
   | 'paused'
   | 'answered'
   | 'failed';
@@ -49,6 +50,23 @@ export type PhotonSend = (handle: string, text: string) => Promise<string | unde
 
 const SURFACE_LABEL = 'iMessage';
 const VIA = 'photon';
+const SEND_COMMAND =
+  /^\s*(?:yes[,!. ]*\s*)?(?:send(?:\s+it)?|approve(?:d)?|ship\s+it|go\s+ahead)\s*[.!]*\s*$/i;
+const SCRAP_COMMAND =
+  /^\s*(?:no[,!. ]*\s*)?(?:scrap(?:\s+it)?|cancel(?:\s+it)?|delete(?:\s+it)?|don'?t\s+send(?:\s+it)?|deny)\s*[.!]*\s*$/i;
+const DECISION_REPLIES: Record<GatewayDecision['outcome'], (d: GatewayDecision) => string> = {
+  sent: (d) => `Sent to ${d.to ?? 'them'}${d.subject ? ` — "${d.subject}"` : ''}.`,
+  deleted: () => 'Scrapped — the draft is deleted.',
+  none: () => 'Nothing is waiting to send.',
+};
+
+/** "send" / "scrap it" as a whole text — the owner deciding the latest draft. */
+export function parseDraftDecision(text: string): DraftDecision | null {
+  if (SEND_COMMAND.test(text)) {
+    return 'approved';
+  }
+  return SCRAP_COMMAND.test(text) ? 'denied' : null;
+}
 const SHARED_LINE = 'shared';
 
 /** The shared pool reports its line as the literal `shared`; label it as the agent's number. */
@@ -162,6 +180,15 @@ async function respond(
   if (await deps.methods.isChannelsPaused(deps.owner.user)) {
     deps.logger.info('[photon] paused — not answering');
     return 'paused';
+  }
+  const decision = parseDraftDecision(message.text);
+  if (decision && deps.gateway) {
+    const result = await deps.gateway.decide(decision);
+    const reply = DECISION_REPLIES[result.outcome](result);
+    const sentId = await send(message.sender, reply);
+    await logOutbound(deps, message, reply, sentId);
+    deps.logger.info(`[photon] draft ${decision}: ${result.outcome}`);
+    return 'decided';
   }
   const answer = await deps.client.respondingIn(message.sender, () =>
     answerFor(deps, message, memory),

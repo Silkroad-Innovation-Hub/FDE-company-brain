@@ -508,6 +508,7 @@ describe('gmail poller', () => {
     const box = fakeMailbox([q]);
     const { deps: d, chat } = deps(box);
     const gateway = {
+      decide: jest.fn(async () => ({ outcome: 'none' as const })),
       answer: jest.fn(async () => ({
         text: 'Gateway says $12,400.',
         conversationId: 'c1',
@@ -530,6 +531,7 @@ describe('gmail poller', () => {
     expect(chat).not.toHaveBeenCalled();
 
     const paused = {
+      decide: jest.fn(async () => ({ outcome: 'none' as const })),
       answer: jest.fn(async () => {
         throw new GatewayError('paused', 'paused', 423);
       }),

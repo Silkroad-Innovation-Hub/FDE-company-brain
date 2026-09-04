@@ -6,6 +6,7 @@ const {
   GatewayPausedError,
   createChannelAudit,
 } = require('@librechat/api');
+const { decideLatestDraft } = require('~/server/services/drafts');
 const {
   findUser,
   generateToken,
@@ -101,6 +102,33 @@ router.post('/answer', async (req, res) => {
     }
     logger.error('[channels] answer failed:', error);
     res.status(502).json({ error: error?.message ?? 'answer failed' });
+  }
+});
+
+const DECISIONS = new Set(['approved', 'denied']);
+
+/** "send" / "scrap it" over a channel: decide the owner's latest pending email draft. */
+router.post('/decide', async (req, res) => {
+  const { decision } = req.body ?? {};
+  if (!DECISIONS.has(decision)) {
+    return res.status(400).json({ error: 'decision must be approved or denied' });
+  }
+  try {
+    const owner = await resolveOwner();
+    if (!owner) {
+      return res.status(503).json({ error: 'SILKROAD_USER_EMAIL is not configured or not found' });
+    }
+    if (await isChannelsPaused(String(owner._id))) {
+      return res.status(423).json({ error: 'paused' });
+    }
+    const result = await decideLatestDraft(
+      { id: String(owner._id), email: owner.email, tenantId: owner.tenantId ?? undefined },
+      decision,
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('[channels] decision failed:', error);
+    res.status(502).json({ error: error?.message ?? 'decision failed' });
   }
 });
 

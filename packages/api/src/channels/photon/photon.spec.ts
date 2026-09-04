@@ -154,6 +154,7 @@ describe('processPhotonMessage', () => {
 
   it('answers through the gateway with a photon thread id and stays silent when it is paused', async () => {
     const gateway = {
+      decide: jest.fn(async () => ({ outcome: 'none' as const })),
       answer: jest.fn(async () => ({
         text: 'Gateway answer.',
         conversationId: 'c1',
@@ -173,6 +174,7 @@ describe('processPhotonMessage', () => {
     expect(client.sent).toEqual([[OWNER, 'Gateway answer.']]);
 
     const paused = {
+      decide: jest.fn(async () => ({ outcome: 'none' as const })),
       answer: jest.fn(async () => {
         throw new GatewayError('paused', 'paused', 423);
       }),
@@ -223,6 +225,35 @@ describe('processPhotonMessage', () => {
     await processPhotonMessage(deps, inbound({ line: 'shared' }), memory);
     expect(deps.methods.log.get('photon-m1')?.subject).toBe('iMessage Photon line');
     expect(deps.methods.log.get('photon-s1')?.sender).toBe('Photon line');
+  });
+
+  it('treats "send" and "scrap it" as decisions on the latest draft', async () => {
+    const gateway = {
+      answer: jest.fn(async () => ({
+        text: 'x',
+        conversationId: 'c',
+        messageId: 'm',
+        truncated: false,
+      })),
+      decide: jest.fn(async (decision: 'approved' | 'denied') =>
+        decision === 'approved'
+          ? { outcome: 'sent' as const, to: 'dana@henderson.com', subject: 'Invoice 1042' }
+          : { outcome: 'deleted' as const },
+      ),
+    };
+    const d = { ...deps, gateway };
+    expect(await processPhotonMessage(d, inbound({ id: 'd1', text: 'Send it!' }), memory)).toBe(
+      'decided',
+    );
+    expect(gateway.decide).toHaveBeenCalledWith('approved');
+    expect(client.sent[0][1]).toBe('Sent to dana@henderson.com — "Invoice 1042".');
+    expect(await processPhotonMessage(d, inbound({ id: 'd2', text: 'scrap it' }), memory)).toBe(
+      'decided',
+    );
+    expect(gateway.decide).toHaveBeenLastCalledWith('denied');
+    expect(client.sent[1][1]).toMatch(/Scrapped/);
+    expect(gateway.answer).not.toHaveBeenCalled();
+    expect(deps.methods.log.get('photon-s1')?.direction).toBe('outbound');
   });
 
   it('reports a failed send without throwing', async () => {

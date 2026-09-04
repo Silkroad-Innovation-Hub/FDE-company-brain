@@ -36,12 +36,23 @@ export interface GatewayClientConfig {
   fetchFn?: typeof fetch;
 }
 
+export type DraftDecision = 'approved' | 'denied';
+
+export interface GatewayDecision {
+  outcome: 'sent' | 'deleted' | 'none';
+  to?: string;
+  subject?: string;
+}
+
 export interface GatewayClient {
   answer: (request: GatewayAnswerRequest) => Promise<GatewayAnswer>;
+  /** Decides the owner's latest pending email draft ("send" / "scrap it" over a channel). */
+  decide: (decision: DraftDecision) => Promise<GatewayDecision>;
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const ANSWER_PATH = '/api/channels/answer';
+const DECIDE_PATH = '/api/channels/decide';
 
 function kindForStatus(status: number): GatewayFailureKind {
   if (status === 423) {
@@ -64,23 +75,24 @@ function kindForStatus(status: number): GatewayFailureKind {
 export function createGatewayClient(config: GatewayClientConfig): GatewayClient {
   const fetchFn = config.fetchFn ?? fetch;
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const endpoint = `${config.url.replace(/\/+$/, '')}${ANSWER_PATH}`;
+  const base = config.url.replace(/\/+$/, '');
+  const endpoint = `${base}${ANSWER_PATH}`;
 
-  async function answer(request: GatewayAnswerRequest): Promise<GatewayAnswer> {
+  async function post<T>(url: string, body: object): Promise<T> {
     let response: Response;
     try {
-      response = await fetchFn(endpoint, {
+      response = await fetchFn(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${config.token}`,
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new GatewayError('unavailable', `gateway unreachable at ${endpoint}: ${message}`);
+      throw new GatewayError('unavailable', `gateway unreachable at ${url}: ${message}`);
     }
     if (!response.ok) {
       const body = await response.text().catch(() => '');
@@ -90,8 +102,11 @@ export function createGatewayClient(config: GatewayClientConfig): GatewayClient 
         response.status,
       );
     }
-    return (await response.json()) as GatewayAnswer;
+    return (await response.json()) as T;
   }
 
-  return { answer };
+  return {
+    answer: (request) => post<GatewayAnswer>(endpoint, request),
+    decide: (decision) => post<GatewayDecision>(`${base}${DECIDE_PATH}`, { decision }),
+  };
 }
