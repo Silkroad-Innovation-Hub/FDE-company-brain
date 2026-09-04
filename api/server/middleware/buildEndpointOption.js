@@ -17,6 +17,7 @@ const azureAssistants = require('~/server/services/Endpoints/azureAssistants');
 const assistants = require('~/server/services/Endpoints/assistants');
 const { getEndpointsConfig } = require('~/server/services/Config');
 const agents = require('~/server/services/Endpoints/agents');
+const { withBrainSnapshot } = require('./brain');
 const { updateFilesUsage } = require('~/models');
 
 const buildFunction = {
@@ -128,6 +129,7 @@ async function buildEndpointOption(req, res, next) {
       req.body.clientTimestamp,
     );
   }
+  parsedBody = await withBrainSnapshot(parsedBody, req.user?.id);
 
   try {
     const builder = isAgents
