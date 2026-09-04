@@ -42,6 +42,8 @@ describe('brain snapshot', () => {
     expect(snapshot).toContain('Company brain (2 notes');
     expect(snapshot).toContain('- Anduril (company): ');
     expect(snapshot).toContain('$61B');
+    expect(snapshot).toContain('Monthly burn: $61,400');
+    expect(snapshot).toContain('Cash on hand: $152,600');
     expect(snapshot).toContain('- Henderson Invoice (invoice): amount: $12,400; due: 2026-09-10');
   });
 

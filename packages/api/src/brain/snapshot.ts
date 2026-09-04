@@ -1,6 +1,7 @@
 import type { TodoLean } from '@librechat/data-schemas';
 import type { BrainNoteMeta } from './vault';
 import { loadVault } from './vault';
+import { DASHBOARD_SNAPSHOT } from './dashboard';
 
 /** Placeholder a model spec's promptPrefix carries to receive the live brain snapshot. */
 export const BRAIN_PLACEHOLDER = '{{silkroad_brain}}';
@@ -44,6 +45,7 @@ export async function buildBrainSnapshot(vaultPath: string, todos: TodoLean[]): 
   const sorted = [...notes].sort((a, b) => a.title.localeCompare(b.title));
   return [
     todoLines(todos),
+    DASHBOARD_SNAPSHOT,
     `Company brain (${notes.length} notes; title (type): key facts):`,
     ...sorted.map(noteLine),
   ].join('\n');
