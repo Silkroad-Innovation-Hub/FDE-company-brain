@@ -58,6 +58,8 @@ export interface ImessageDeps {
   ownHandles: Set<string>;
   /** Where agent-initiated notices go; defaults to the first own handle (the self-chat). */
   noticeHandle?: string;
+  /** Chats (handle or chat name, normalised) another connector already logs, e.g. the Photon line. */
+  ignoreChats?: Set<string>;
   logger: ImessageLogger;
   now?: () => Date;
 }
@@ -92,13 +94,28 @@ function echoKey(row: MessageRow, text: string): string {
   return `${String(replyTarget(row) ?? '').toLowerCase()}|${text.trim().toLowerCase()}`;
 }
 
+/** Comma-separated handles from config, normalised for comparison. */
+export function parseHandles(list: string): Set<string> {
+  return new Set(
+    list
+      .split(',')
+      .map((handle) => handle.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 /** Own account handles plus any configured extras, normalised for comparison. */
 export function resolveOwnHandles(sql: SqlRunner, extra: string): Set<string> {
-  const configured = extra
-    .split(',')
-    .map((handle) => handle.trim().toLowerCase())
-    .filter(Boolean);
-  return new Set([...fetchOwnHandles(sql), ...configured]);
+  return new Set([...fetchOwnHandles(sql), ...parseHandles(extra)]);
+}
+
+function isIgnoredChat(row: MessageRow, ignored: Set<string> | undefined): boolean {
+  if (!ignored || ignored.size === 0) {
+    return false;
+  }
+  const chat = String(row.chat_name ?? '').toLowerCase();
+  const sender = String(row.handle ?? '').toLowerCase();
+  return ignored.has(chat) || ignored.has(sender);
 }
 
 /** Marketing/notification SMS: short-code senders or STOP/unsubscribe footers. Logged, never triaged. */
@@ -230,6 +247,9 @@ export async function processRows(deps: ImessageDeps, rows: MessageRow[]): Promi
   let last = 0;
   for (const row of rows) {
     last = Math.max(last, row.rowid);
+    if (isIgnoredChat(row, deps.ignoreChats)) {
+      continue;
+    }
     const text = messageText(row.text, row.body_hex);
     if (!text) {
       continue;

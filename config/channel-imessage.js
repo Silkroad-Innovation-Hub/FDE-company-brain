@@ -16,6 +16,7 @@ const {
   createEchoGuard,
   createGatewayClient,
   createSqlRunner,
+  parseHandles,
   resolveOwnHandles,
   guardedSender,
   maxRowId,
@@ -105,6 +106,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     vaultPath,
     user: String(owner._id),
     ownHandles,
+    ignoreChats: parseHandles(process.env.IMESSAGE_IGNORE_CHATS || ''),
     logger,
   };
 
