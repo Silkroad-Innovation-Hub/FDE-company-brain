@@ -1,5 +1,6 @@
-# One Silkroad client on one VPS: API + brain worker + Gmail connector + Mongo.
-# The iMessage connector runs on a Mac (Messages.app) and points SILKROAD_API_URL at this host.
+# One Silkroad client on one VPS: API + brain worker + Photon iMessage connector + Gmail
+# connector + Mongo. The optional chat.db connector (passive ingestion of the owner's other
+# iMessage threads) runs on a Mac and points SILKROAD_API_URL at this host.
 #
 #   cd deploy && docker compose -f docker-compose.silkroad.yml up -d --build
 #
@@ -45,6 +46,14 @@ services:
     <<: *silkroad
     container_name: silkroad-worker
     command: ["node", "config/brain-worker.js"]
+    depends_on:
+      - mongodb
+      - api
+
+  photon:
+    <<: *silkroad
+    container_name: silkroad-photon
+    command: ["node", "config/channel-photon.js"]
     depends_on:
       - mongodb
       - api

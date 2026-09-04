@@ -1,6 +1,6 @@
 /**
  * pm2 process file for one Silkroad instance — the API, the brain worker, and the
- * two channel connectors, each restarted on crash.
+ * channel connectors, each restarted on crash.
  *
  * pm2 is not a project dependency; run it through npx from the repo root:
  *   npx pm2 start config/ecosystem.config.js
@@ -8,8 +8,9 @@
  *   npx pm2 delete config/ecosystem.config.js
  *
  * Every script loads ./.env itself (dotenv), so no env is duplicated here.
- * `silkroad-imessage` only makes sense on a Mac with Messages signed in; on a
- * VPS start the other three: `npx pm2 start config/ecosystem.config.js --only silkroad-api,silkroad-worker,silkroad-gmail`.
+ * `silkroad-imessage` (chat.db) only makes sense on a Mac with Messages signed in;
+ * `silkroad-photon` (the agent's own iMessage number) runs anywhere. On a VPS:
+ * `npx pm2 start config/ecosystem.config.js --only silkroad-api,silkroad-worker,silkroad-photon,silkroad-gmail`.
  */
 const path = require('path');
 
@@ -38,6 +39,7 @@ module.exports = {
     app('silkroad-api', 'npm', 'run backend'),
     app('silkroad-worker', 'config/brain-worker.js'),
     app('silkroad-imessage', 'config/channel-imessage.js'),
+    app('silkroad-photon', 'config/channel-photon.js'),
     app('silkroad-gmail', 'config/channel-gmail.js'),
   ],
 };
