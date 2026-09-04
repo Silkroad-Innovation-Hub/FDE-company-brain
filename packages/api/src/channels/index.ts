@@ -13,3 +13,4 @@ export * from './imessage';
 export * from './gmail';
 export * from './photon';
 export * from './memory';
+export * from './contacts';

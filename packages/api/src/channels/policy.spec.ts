@@ -32,6 +32,16 @@ describe('draft policy', () => {
     expect(() => policy.assertRecipientsAllowed({ to: [] })).toThrow(/no recipient/);
   });
 
+  it('exempts named contact addresses from the domain allowlist', () => {
+    const policy = createDraftPolicy({
+      ownerEmail: 'me@gmail.com',
+      allowedDomains: [],
+      allowedAddresses: ['Feruza <Feruza.Ieva@gmail.com>'],
+    });
+    expect(policy.isRecipientAllowed('feruza.ieva@gmail.com')).toBe(true);
+    expect(policy.isRecipientAllowed('other@gmail.com')).toBe(false);
+  });
+
   it('extracts domains for audit metadata', () => {
     expect(domainOf('Dana <dana@AP.Acme.com>')).toBe('ap.acme.com');
     expect(domainOf('nonsense')).toBe('');

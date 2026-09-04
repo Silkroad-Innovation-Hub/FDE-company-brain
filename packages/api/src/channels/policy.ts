@@ -14,6 +14,7 @@ export interface DraftRecipients {
 export interface DraftPolicy {
   ownerEmail: string;
   allowedDomains: string[];
+  allowedAddresses: string[];
   isRecipientAllowed: (address: string) => boolean;
   assertRecipientsAllowed: (recipients: DraftRecipients) => void;
 }
@@ -53,16 +54,18 @@ function toList(value: string | string[] | undefined): string[] {
 export function createDraftPolicy(config: {
   ownerEmail: string;
   allowedDomains: string[];
+  allowedAddresses?: string[];
 }): DraftPolicy {
   const owner = extractAddress(config.ownerEmail);
   const allowedDomains = config.allowedDomains.map((domain) => domain.toLowerCase());
+  const allowedAddresses = new Set([owner, ...(config.allowedAddresses ?? []).map(extractAddress)]);
 
   function isRecipientAllowed(address: string): boolean {
     const normalized = extractAddress(address);
     if (!normalized) {
       return false;
     }
-    if (normalized === owner) {
+    if (allowedAddresses.has(normalized)) {
       return true;
     }
     const domain = domainOf(normalized);
@@ -82,5 +85,11 @@ export function createDraftPolicy(config: {
     }
   }
 
-  return { ownerEmail: owner, allowedDomains, isRecipientAllowed, assertRecipientsAllowed };
+  return {
+    ownerEmail: owner,
+    allowedDomains,
+    allowedAddresses: [...allowedAddresses],
+    isRecipientAllowed,
+    assertRecipientsAllowed,
+  };
 }
