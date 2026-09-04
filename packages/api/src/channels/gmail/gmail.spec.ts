@@ -267,6 +267,7 @@ function fakeMailbox(initial: GmailMessage[]): FakeMailbox {
         return { messageIds: ids, historyId: box.historyId };
       },
       listRecent: async (max) => [...box.messages.keys()].slice(-max),
+      listInbox: async (max) => [...box.messages.keys()].slice(-max).reverse(),
       getMessage: async (id) => {
         const found = box.messages.get(id);
         if (!found) {

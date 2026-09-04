@@ -40,11 +40,16 @@ function todoLines(todos: TodoLean[]): string {
  * headline facts — so a channel answer needs no tool round-trip for the common case.
  * `loadVault` caches by vault stamp, so this is cheap to call per request.
  */
-export async function buildBrainSnapshot(vaultPath: string, todos: TodoLean[]): Promise<string> {
+export async function buildBrainSnapshot(
+  vaultPath: string,
+  todos: TodoLean[],
+  inbox?: string,
+): Promise<string> {
   const notes = await loadVault(vaultPath);
   const sorted = [...notes].sort((a, b) => a.title.localeCompare(b.title));
   return [
     todoLines(todos),
+    ...(inbox ? [inbox] : []),
     DASHBOARD_SNAPSHOT,
     `Company brain (${notes.length} notes; title (type): key facts):`,
     ...sorted.map(noteLine),

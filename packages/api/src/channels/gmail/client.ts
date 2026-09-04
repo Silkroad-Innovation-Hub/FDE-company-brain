@@ -38,6 +38,8 @@ export interface GmailApi {
   getProfile: () => Promise<GmailProfile>;
   listHistory: (startHistoryId: string) => Promise<GmailHistorySync>;
   listRecent: (maxResults: number) => Promise<string[]>;
+  /** Newest inbox messages regardless of age (for the brain snapshot). */
+  listInbox: (maxResults: number) => Promise<string[]>;
   getMessage: (id: string) => Promise<GmailMessage>;
   /** Owner-only: throws `RecipientNotOwnerError` for any other address. */
   sendReply: (reply: GmailOutgoing) => Promise<string>;
@@ -63,6 +65,7 @@ export interface GmailClientConfig {
 }
 
 const RECENT_QUERY = 'newer_than:2d -in:spam -in:trash';
+const INBOX_QUERY = 'in:inbox -in:spam -in:trash';
 const HISTORY_PAGE_SIZE = 500;
 
 export function assertOwnerRecipient(ownerEmail: string, to: string): void {
@@ -149,6 +152,11 @@ export function createGmailClient(config: GmailClientConfig): GmailApi {
     return (data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id));
   }
 
+  async function listInbox(maxResults: number): Promise<string[]> {
+    const { data } = await api.users.messages.list({ userId, q: INBOX_QUERY, maxResults });
+    return (data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id));
+  }
+
   async function getMessage(id: string): Promise<GmailMessage> {
     const { data } = await api.users.messages.get({ userId, id, format: 'full' });
     return data as GmailMessage;
@@ -196,6 +204,7 @@ export function createGmailClient(config: GmailClientConfig): GmailApi {
     getProfile,
     listHistory,
     listRecent,
+    listInbox,
     getMessage,
     sendReply,
     createDraft,

@@ -129,7 +129,7 @@ async function buildEndpointOption(req, res, next) {
       req.body.clientTimestamp,
     );
   }
-  parsedBody = await withBrainSnapshot(parsedBody, req.user?.id);
+  parsedBody = await withBrainSnapshot(parsedBody, req.user?.id, req.user?.email);
 
   try {
     const builder = isAgents
