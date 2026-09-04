@@ -80,33 +80,41 @@ channels/
   ingest.ts      appendFromChannel(): messageId dedup, direction, source header → appendBrainLog
   pause.ts       isPaused()/setPaused(); detects the "pause everything"/"resume" commands
   answer.ts      answerQuestion(): owner-only Q&A over open to-dos + vault (ported responder)
+  memory.ts      ThreadMemory: per-process thread history for the local-fallback answerer
   imessage/
     db.ts        sqlite3 CLI queries (new rows, thread history, own handles)
     decode.ts    attributedBody typedstream decode (+ fixtures)
     poll.ts      poll loop, state file, self-chat detection, reply via osascript
+  photon/
+    types.ts     PhotonClient / PhotonInbound — the SDK-free transport seam
+    client.ts    @spectrum-ts wrapper (the only SDK import; built as @librechat/api/photon)
+    stream.ts    owner-only gate, raw-log append, kill switch, gateway answer, notices
   gmail/
     client.ts    googleapis OAuth2 client, history sync, drafts.create, send (owner-only)
     parse.ts     MIME → text: text/plain first, HTML stripped, quoted history removed
     poll.ts      poll loop, state file (historyId), bulk pre-filter, self-email answering
 ```
 
-Runners: `config/channel-imessage.js`, `config/channel-gmail.js`, `config/gmail-auth.js`
-(one-time OAuth consent → refresh token). Scripts: `npm run channel:imessage`,
-`npm run channel:gmail`. Each connector is its own process, like the worker — responding
-and ingesting stay parallel by construction.
+Runners: `config/channel-imessage.js`, `config/channel-photon.js`, `config/photon-hello.js`
+(one-time onboarding text), `config/channel-gmail.js`, `config/gmail-auth.js` (one-time OAuth
+consent → refresh token). Scripts: `npm run channel:imessage`, `npm run channel:photon`,
+`npm run photon:hello`, `npm run channel:gmail`. Each connector is its own process, like the
+worker — responding and ingesting stay parallel by construction.
 
 The prototype files are deleted once the port lands (they are untracked; nothing to revert).
 
 ## iMessage
 
-**Transport for dogfood: keep `chat.db` polling on the Mac.** It is proven, dependency-free
-(`/usr/bin/sqlite3`, `/usr/bin/osascript`), and needs only Full Disk Access for the
-terminal plus Messages signed in. Roadmap decision **D1** (Photon Spectrum vs BlueBubbles
-on a Mac mini vs hosted relay) is *not* forced by this work: `imessage/db.ts` is the only
-transport-specific module, and a BlueBubbles webhook source would replace it behind the
-same `poll.ts` interface. When the connector runs on a Mac mini and the brain on a client
-VPS, it stops talking to Mongo directly and POSTs to a token-authenticated
-`POST /api/channels/ingest` — that endpoint is added when D1 is resolved, not now.
+**Two transports, one pipeline.** `chat.db` polling on the owner's Mac (below) is the
+passive-ingestion path: it sees every iMessage thread the owner has and answers in their
+self-chat, but "the agent's number" is the owner's own. **Photon** (next section) is the
+agent's *own* iMessage number, provisioned in the cloud, no Mac required — the one a person
+saves as a contact and texts. Roadmap decision **D1** is resolved in favour of Photon
+(Sep 3, 2026); `chat.db` stays as the Mac-only option for ingesting the owner's other
+threads. When both run on the same Mac, set `IMESSAGE_IGNORE_CHATS=<photon line>` so the
+`chat.db` connector skips the thread Photon already logs (otherwise the agent's own replies
+would be triaged as a third party's texts). The `POST /api/channels/ingest` endpoint for an
+off-box `chat.db` relay is still deferred; Photon does not need it.
 
 **Ingestion.** Poll every `IMESSAGE_POLL_MS` (default 15s) for `ROWID > lastRowId`,
 `associated_message_type = 0` (skips tapbacks). Per row: `messageId = imessage-<guid>`,
@@ -127,6 +135,50 @@ chat is the same trust level as web chat and needs no approval. Later, when Silk
 exists, `answerQuestion` is replaced by a call to the same gateway web chat uses; until
 then it is the ported prototype (vault token-overlap retrieval + open to-dos + `gpt-5.5`),
 which is honest about being a stopgap.
+
+
+## Photon (the agent's own iMessage number)
+
+**Transport.** [Photon Spectrum](https://photon.codes) — `@spectrum-ts/core` +
+`@spectrum-ts/imessage` (v12.8.0, ESM-only, gRPC). The SDK is wrapped in
+`channels/photon/client.ts` and built as its own `@librechat/api/photon` entry so the API
+server, worker and other connectors never load it; everything else programs against the
+SDK-free `PhotonClient` interface in `types.ts`, which is what the spec fakes.
+
+**Tier and lock-in.** Free tier = *shared line pool*: a line only messages phones registered
+as **users** of the Photon project (dashboard → Users, max 10), different recipients may see
+different sending numbers (each conversation stays stable), 50 new conversations per line
+per day, 5,000 messages per server per day. Locked in for the demo: **one registered user,
+the owner** (`PHOTON_OWNER_HANDLE`, an E.164 phone or Apple ID email exactly as registered).
+Every other sender and every group chat is dropped *before* the raw log — a stranger texting
+a bot is not company data and is an injection surface (brief §6). A client-facing fixed
+number is the Business tier ($250/line/month): dedicated line, no allowlist, group chats.
+
+**Onboarding.** Dashboard: create a project → Settings gives `PHOTON_PROJECT_ID` /
+`PHOTON_PROJECT_SECRET` → Users: add the owner's phone. Then `npm run photon:hello` texts
+the owner the agent's native contact card plus a greeting from the agent's number and prints
+that number; the owner taps the card to save the contact and texts it. From then on
+`npm run channel:photon` (pm2 `silkroad-photon`, compose service `photon`) answers.
+
+**Pipeline** (`channels/photon/stream.ts`, mirrors the other connectors): inbound text →
+group/stranger gate → `ingestChannelMessage` (`messageId = photon-<id>`,
+`conversationId = photon:<space id>`, `surface: imessage`, `subject: iMessage <line>`) →
+`handlePauseCommand` / paused check → answer through `POST /api/channels/answer`
+(`externalThreadId = photon:<space id>`, so the thread mirrors into one web conversation)
+inside the SDK's typing indicator → send → the reply is appended as `outbound` with the
+SDK's message id. No `🧠` marker: Photon reports `direction` itself, and the marker is a
+dogfood artifact an executive should not see. No echo guard: a cloud DM has one copy per
+message. Agent-initiated notices are delivered on a timer (`PHOTON_NOTICE_MS`, 15s) through
+the same owner-only sender. The stream is consumed one message at a time; if it ends or
+throws the process exits non-zero and pm2 / compose restart it (the SDK's reconnect
+behaviour is undocumented). Messages that arrive while the connector is down are an accepted
+gap; replays, if the SDK does them, are harmless because the raw-log append is idempotent.
+
+**Voice.** Channel answers run the `silkroad-channel` spec whose prompt ends with the
+texting voice: one or two short sentences, contractions, plain text, no bullets or sign-off.
+
+Env: `PHOTON_PROJECT_ID`, `PHOTON_PROJECT_SECRET`, `PHOTON_OWNER_HANDLE`, `PHOTON_NOTICE_MS`;
+on a Mac also running `channel:imessage`, `IMESSAGE_IGNORE_CHATS=<line>`.
 
 ## Email
 
@@ -248,8 +300,9 @@ rebuild of `packages/api`):
    `npm run gmail:auth` once Gmail is set up so the token also carries the calendar scope.
 
 7. Local Mongo is the `silkroad-mongo` Docker container (publishes 127.0.0.1:27017; the
-   compose `chat-mongodb` does not publish a host port). The API binds `localhost` → `::1`
-   on this Mac, so `.env` carries `SILKROAD_API_URL=http://[::1]:3080` for the connectors.
+   compose `chat-mongodb` does not publish a host port). `HOST=localhost` resolved to `::1`
+   one day and `127.0.0.1` the next, so `.env` pins `HOST=127.0.0.1` and
+   `SILKROAD_API_URL=http://127.0.0.1:3080` for the connectors (Sep 3, 2026).
 
 Kill switch: text or email yourself "pause everything" / "resume".
 
@@ -271,6 +324,13 @@ where noted:
   `chat.db`: one pass ingested ROWIDs 19655–19867 with sender/thread provenance and sent
   nothing (no fresh owner question). Marketing SMS from short codes and texts with
   STOP/unsubscribe footers are logged as `bulk`, mirroring the email pre-filter.
+- **Photon** (`npm run channel:photon`, `npm run photon:hello`, `packages/api/src/channels/photon/`,
+  Sep 3, 2026): built as specified in the Photon section; 10 tests against an in-memory
+  `PhotonClient` fake (owner answered via gateway with typing indicator, strangers and groups
+  dropped before the log, duplicate ids, kill switch, failed sends, notices with retry, stream
+  end → rejection). The chat.db connector gained `IMESSAGE_IGNORE_CHATS`; `ThreadMemory` moved
+  to `channels/memory.ts`; the dashboard health strip shows "Agent number". **Not yet run
+  live** — needs a Photon project + the owner's phone registered; steps in the Photon section.
 - **Gmail** (`npm run channel:gmail`, `npm run gmail:auth`, `packages/api/src/channels/gmail/`):
   built on `@googleapis/gmail` exactly as specified; 16 tests against an in-memory Gmail
   fake. **Not yet run live** — no OAuth client/refresh token in `.env`; first-run steps are
@@ -289,6 +349,8 @@ where noted:
 
 - Which handle is "the agent" for a client who does not use Note to Self — a dedicated
   Apple ID on the relay Mac mini (cleanest; also resolves D1) or the owner's own?
+  **Answered Sep 3, 2026:** neither — a Photon line (see the Photon section). The agent has
+  its own number; the owner's Note to Self remains a `chat.db`-only convenience.
 - Group-chat ingestion: fine for dogfood; per client it may need an allowlist of chats
   (privacy expectation of the other participants).
 - Should the owner's *sent* mail be triaged at full cost, or only when it starts a thread?

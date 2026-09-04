@@ -37,9 +37,8 @@ separate worker process, so replies never wait on ingestion.
 - **Email**: Gmail API (watch/push or polling), send-as drafts. Inbound mail is untrusted:
   triage runs on a cheap model with **no tools**; instructions inside emails are flagged,
   never executed.
-- **iMessage**: requires Apple hardware — a Linux VPS cannot speak iMessage. Options:
-  Photon Spectrum (per Plan v2), BlueBubbles on a Mac mini relay, or a hosted relay.
-  **Open decision D1** — resolve before week 2.
+- **iMessage**: Photon Spectrum gives the agent its own iMessage number from a Linux VPS
+  (**D1 resolved**, Sep 3 2026); `chat.db` polling on a Mac remains for passive ingestion.
 
   **Status (Aug 30, 2026):** built in the fork — see [`channels.md`](./channels.md). iMessage
   via `chat.db` polling on a Mac (D1 still open; transport isolated in one module), Gmail via
@@ -150,9 +149,11 @@ proxies `/api/silkroad/*` to the gateway so the dashboard and chat share auth.
 
 ## Open decisions (resolve before they block)
 
-- **D1 (blocks A3, week 2): iMessage transport.** Linux VPS can't do iMessage. Photon
-  Spectrum vs BlueBubbles-on-Mac-mini relay vs hosted relay — pick one; affects cost,
-  reliability, and the "dedicated per-client" isolation story.
+- **D1 — resolved Sep 3, 2026: Photon Spectrum.** The agent gets its own cloud iMessage
+  number, no Mac, connector runs on the client VPS (`npm run channel:photon`,
+  `channels.md` → Photon). Free tier (shared line pool, owner only) for demos; a client's
+  fixed branded number is the Business tier at $250/line/month — a per-client cost line.
+  `chat.db` polling stays as the Mac-only passive-ingestion option.
 - **D2 (blocks A1): default model on OpenRouter.** "Cheapest still-capable"
   (DeepSeek-class) — benchmark 2–3 candidates on drafting + triage quality vs the Claude
   table as reference before locking the default and fallback chain.
