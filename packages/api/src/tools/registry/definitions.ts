@@ -327,6 +327,26 @@ export const fileSearchSchema: ExtendedJsonSchema = {
   required: ['query'],
 };
 
+/** Email Draft tool JSON schema */
+export const emailDraftSchema: ExtendedJsonSchema = {
+  type: 'object',
+  properties: {
+    to: {
+      type: 'string',
+      description: 'Recipient email address (one address).',
+    },
+    subject: {
+      type: 'string',
+      description: 'Short, specific subject line.',
+    },
+    body: {
+      type: 'string',
+      description: 'Plain-text body in the owner\'s voice, ready to send. No placeholders.',
+    },
+  },
+  required: ['to', 'subject', 'body'],
+};
+
 /** Brain Search tool JSON schema */
 export const brainSearchSchema: ExtendedJsonSchema = {
   type: 'object',
@@ -419,6 +439,13 @@ export const toolDefinitions: Record<string, ToolRegistryDefinition> = {
     schema: fileSearchSchema,
     toolType: 'builtin',
     responseFormat: 'content_and_artifact',
+  },
+  email_draft: {
+    name: 'email_draft',
+    description:
+      "Drafts an email in the owner's Gmail and queues it for the owner's approval; nothing is sent until the owner says send. Use when the owner asks to email, reply to, or message someone.",
+    schema: emailDraftSchema,
+    toolType: 'builtin',
   },
   brain_search: {
     name: 'brain_search',

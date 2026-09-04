@@ -53,6 +53,8 @@ export type TModelSpec = {
   fileSearch?: boolean;
   /** Equip the spec's ephemeral agent with the company-brain `brain_search` tool. */
   brainSearch?: boolean;
+  /** Equip the spec's ephemeral agent with the draft-for-approval `email_draft` tool. */
+  emailDraft?: boolean;
   executeCode?: boolean;
   memory?: boolean;
   /** Equip the spec's ephemeral agent with the `ask_user_question` HITL tool. */
@@ -111,6 +113,7 @@ export const tModelSpecSchema = z.object({
   webSearch: z.boolean().optional(),
   fileSearch: z.boolean().optional(),
   brainSearch: z.boolean().optional(),
+  emailDraft: z.boolean().optional(),
   executeCode: z.boolean().optional(),
   memory: z.boolean().optional(),
   askUserQuestion: z.boolean().optional(),

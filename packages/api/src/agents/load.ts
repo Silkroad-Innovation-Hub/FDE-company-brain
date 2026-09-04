@@ -80,6 +80,9 @@ export async function loadEphemeralAgent(
   if (ephemeralAgent?.brain_search === true || modelSpec?.brainSearch === true) {
     tools.push(Tools.brain_search);
   }
+  if (ephemeralAgent?.email_draft === true || modelSpec?.emailDraft === true) {
+    tools.push(Tools.email_draft);
+  }
   if (ephemeralAgent?.web_search === true || modelSpec?.webSearch === true) {
     tools.push(Tools.web_search);
   }

@@ -20,6 +20,7 @@ export enum Tools {
   code_interpreter = 'code_interpreter',
   file_search = 'file_search',
   brain_search = 'brain_search',
+  email_draft = 'email_draft',
   web_search = 'web_search',
   retrieval = 'retrieval',
   function = 'function',

@@ -56,6 +56,7 @@ const {
 const { getMCPRequestContext } = require('~/server/services/MCPRequestContext');
 const { createFileSearchTool, primeFiles: primeSearchFiles } = require('./fileSearch');
 const { createBrainSearchTool } = require('./brainSearch');
+const { createEmailDraftTool } = require('./emailDraft');
 const { primeFiles: primeCodeFiles } = require('~/server/services/Files/Code/process');
 const { getUserPluginAuthValue } = require('~/server/services/PluginService');
 const { loadAuthValues } = require('~/server/services/Tools/credentials');
@@ -404,6 +405,9 @@ const loadTools = async ({
           retriever: options.req?.app?.locals?.brainRetriever,
           getTodos,
         });
+      continue;
+    } else if (tool === Tools.email_draft) {
+      requestedTools[tool] = async () => createEmailDraftTool({ user: options.req?.user });
       continue;
     } else if (tool === Tools.web_search) {
       const result = await loadWebSearchAuth({

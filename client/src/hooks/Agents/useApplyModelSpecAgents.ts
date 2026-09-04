@@ -102,6 +102,7 @@ export function useApplyAgentTemplate() {
         web_search: ephemeralAgent?.web_search ?? modelSpec.webSearch ?? false,
         file_search: ephemeralAgent?.file_search ?? modelSpec.fileSearch ?? false,
         brain_search: ephemeralAgent?.brain_search ?? modelSpec.brainSearch ?? false,
+        email_draft: ephemeralAgent?.email_draft ?? modelSpec.emailDraft ?? false,
         execute_code: ephemeralAgent?.execute_code ?? modelSpec.executeCode ?? false,
         artifacts:
           ephemeralAgent?.artifacts ??

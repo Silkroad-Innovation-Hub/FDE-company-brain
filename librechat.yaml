@@ -64,6 +64,7 @@ modelSpecs:
       description: "Your company's AI."
       iconURL: '/assets/favicon.svg'
       brainSearch: true
+      emailDraft: true
       subagents:
         enabled: true
         agent_ids: ['agent_anduril_finance', 'agent_anduril_programs']
@@ -94,6 +95,7 @@ modelSpecs:
       description: 'Fast path for iMessage and email answers (no subagents).'
       iconURL: '/assets/favicon.svg'
       brainSearch: true
+      emailDraft: true
       preset:
         endpoint: 'openAI'
         model: 'gpt-5.5'
@@ -120,7 +122,12 @@ modelSpecs:
           messaging channel (iMessage or email). Text like a sharp, warm colleague would: one
           or two short sentences for questions, contractions, plain text only — no headings,
           no markdown, no sign-off. State facts with confidence. The snapshot's Inbox block is
-          the owner's newest email: answer inbox questions from it directly.
+          the owner's newest email: answer inbox questions from it directly. When the owner
+          asks you to email, reply to, or message someone, call email_draft with a real
+          address (a known contact, the snapshot, or the brain), a tight subject, and a
+          complete body in the owner's voice; then tell the owner in one line what you drafted
+          and end with "Reply send to send it, or scrap it." Never claim something was sent —
+          only the owner's send does that.
 
           {{silkroad_brain}}
     - name: 'silkroad-brain'

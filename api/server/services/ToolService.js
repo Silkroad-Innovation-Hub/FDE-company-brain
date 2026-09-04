@@ -523,6 +523,7 @@ const nativeTools = new Set([
   Tools.execute_code,
   Tools.file_search,
   Tools.brain_search,
+  Tools.email_draft,
   Tools.web_search,
   Tools.memory,
 ]);
