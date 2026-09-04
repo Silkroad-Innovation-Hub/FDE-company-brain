@@ -219,6 +219,12 @@ describe('processPhotonMessage', () => {
     expect(client.sent).toHaveLength(3);
   });
 
+  it('labels the shared pool line as the Photon line', async () => {
+    await processPhotonMessage(deps, inbound({ line: 'shared' }), memory);
+    expect(deps.methods.log.get('photon-m1')?.subject).toBe('iMessage Photon line');
+    expect(deps.methods.log.get('photon-s1')?.sender).toBe('Photon line');
+  });
+
   it('reports a failed send without throwing', async () => {
     client.send = async () => {
       throw new Error('line down');

@@ -49,6 +49,12 @@ export type PhotonSend = (handle: string, text: string) => Promise<string | unde
 
 const SURFACE_LABEL = 'iMessage';
 const VIA = 'photon';
+const SHARED_LINE = 'shared';
+
+/** The shared pool reports its line as the literal `shared`; label it as the agent's number. */
+export function describeLine(line: string): string {
+  return line === SHARED_LINE ? 'Photon line' : line;
+}
 const PHONE_NOISE = /[\s\-().]/g;
 
 /** Phones as Apple delivers them vs as a human types them: compare without formatting noise. */
@@ -93,7 +99,7 @@ async function logOutbound(
     messageId: messageId(id),
     conversationId: threadId(message.spaceId),
     text,
-    sender: message.line,
+    sender: describeLine(message.line),
   });
 }
 
@@ -126,7 +132,7 @@ async function answerFor(
       externalThreadId: threadId(message.spaceId),
       question: message.text,
       sender: message.sender,
-      subject: `iMessage ${message.line}`,
+      subject: `iMessage ${describeLine(message.line)}`,
       format: 'plain',
     });
     return reply.text;
@@ -197,7 +203,7 @@ export async function processPhotonMessage(
     conversationId: threadId(message.spaceId),
     text: message.text,
     sender: message.sender,
-    subject: `iMessage ${message.line}`,
+    subject: `iMessage ${describeLine(message.line)}`,
   });
   if (!fresh) {
     return 'duplicate';

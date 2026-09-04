@@ -28,11 +28,10 @@ function requireEnv(name) {
   const line = await client.lineFor(handle);
   await client.shareContactCard(handle);
   await client.send(handle, GREETING);
-  console.log(`Sent the contact card and a greeting to ${handle} from ${line}.`);
-  console.log(
-    `Save ${line} on the phone, then text it. Add IMESSAGE_IGNORE_CHATS=${line} on a Mac`,
-  );
-  console.log('that also runs channel:imessage so the same thread is not logged twice.');
+  const number = line === 'shared' ? 'the number that just texted you' : line;
+  console.log(`Sent the contact card and a greeting to ${handle} from ${number}.`);
+  console.log(`Tap the card to save ${number}. On a Mac that also runs channel:imessage, add`);
+  console.log('IMESSAGE_IGNORE_CHATS=<that number> so the same thread is not logged twice.');
   await client.stop();
   process.exit(0);
 })().catch((error) => {

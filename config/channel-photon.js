@@ -68,7 +68,9 @@ function requireEnv(name) {
     logger,
     noticeMs,
   });
-  logger.info(`[photon] connector up: ${handle} texts ${line} (vault: ${vaultPath})`);
+  logger.info(
+    `[photon] connector up: ${handle} texts ${line === 'shared' ? 'the shared Photon line' : line} (vault: ${vaultPath})`,
+  );
   await connector.done;
 })().catch(async (error) => {
   logger.error('[photon] connector stopped', error);
