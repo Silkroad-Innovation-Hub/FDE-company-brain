@@ -25,6 +25,7 @@ const WORKFLOW_NAMES = new Set(WORKFLOWS.map((w) => w.workflow));
 const EXPECTED_PROCESSES = [
   { key: 'worker', match: /worker/i },
   { key: 'imessage', match: /imessage/i },
+  { key: 'photon', match: /photon/i },
   { key: 'gmail', match: /gmail|email/i },
 ];
 const ALIVE_WITHIN_MS = 90_000;

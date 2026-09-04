@@ -2377,6 +2377,7 @@
   "com_ui_health": "System health",
   "com_ui_health_worker": "Worker",
   "com_ui_health_imessage": "iMessage",
+  "com_ui_health_photon": "Agent number",
   "com_ui_health_gmail": "Gmail",
   "com_ui_health_alive": "running",
   "com_ui_health_stale": "stale",

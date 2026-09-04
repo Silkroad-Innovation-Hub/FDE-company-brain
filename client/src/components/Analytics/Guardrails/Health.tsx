@@ -12,6 +12,7 @@ type HealthState = 'alive' | 'stale' | 'never';
 const processLabels: Record<TWorkflowProcessHealth['name'], LocalizeKey> = {
   worker: 'com_ui_health_worker',
   imessage: 'com_ui_health_imessage',
+  photon: 'com_ui_health_photon',
   gmail: 'com_ui_health_gmail',
 };
 

@@ -344,7 +344,7 @@ export type TWorkflowPoliciesResponse = TWorkflowPolicy[];
 export type TWorkflowPolicyUpdate = { enabled?: boolean; autoSend?: boolean };
 
 export type TWorkflowProcessHealth = {
-  name: 'worker' | 'imessage' | 'gmail';
+  name: 'worker' | 'imessage' | 'photon' | 'gmail';
   process: string | null;
   host: string | null;
   lastSeenAt: string | null;
