@@ -174,8 +174,15 @@ throws the process exits non-zero and pm2 / compose restart it (the SDK's reconn
 behaviour is undocumented). Messages that arrive while the connector is down are an accepted
 gap; replays, if the SDK does them, are harmless because the raw-log append is idempotent.
 
-**Voice.** Channel answers run the `silkroad-channel` spec whose prompt ends with the
-texting voice: one or two short sentences, contractions, plain text, no bullets or sign-off.
+**Voice and speed.** Channel answers run the `silkroad-channel` spec: texting voice (one or
+two short sentences, contractions, plain text, no sign-off), `reasoning_effort: low`, and a
+`{{silkroad_brain}}` placeholder that `api/server/middleware/brain.js` fills per request with
+the live brain snapshot (`packages/api/src/brain/snapshot.ts`: the owner's open to-dos from
+the dashboard plus every vault note's headline facts). The model answers from the snapshot
+without a tool round-trip and calls `brain_search` only for a detail the snapshot lacks —
+measured Sep 3: 15s → 1.1s for "who is our CEO?", 0.7s for "what is Barracuda?". To-do
+questions always return a prioritized list (the prompt forbids "there are none"); the
+`brain_search` tool also appends open to-dos to every result for the other specs.
 
 Env: `PHOTON_PROJECT_ID`, `PHOTON_PROJECT_SECRET`, `PHOTON_OWNER_HANDLE`, `PHOTON_NOTICE_MS`;
 on a Mac also running `channel:imessage`, `IMESSAGE_IGNORE_CHATS=<line>`.
