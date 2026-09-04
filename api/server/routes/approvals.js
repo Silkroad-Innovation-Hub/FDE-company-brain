@@ -3,13 +3,11 @@ const { logger } = require('@librechat/data-schemas');
 const {
   ownerActor,
   domainOf,
-  createGmailClient,
-  createDraftPolicy,
-  parseDraftDomains,
   applyDraftDecision,
   createChannelAudit,
   RecipientNotAllowedError,
 } = require('@librechat/api');
+const { draftPolicyFor, draftMailerFor } = require('~/server/services/drafts');
 const {
   getApprovals,
   createApproval,
@@ -77,26 +75,12 @@ function parsePayload(raw) {
 }
 
 function draftPolicy(req) {
-  return createDraftPolicy({
-    ownerEmail: process.env.SILKROAD_USER_EMAIL || req.user.email || '',
-    allowedDomains: parseDraftDomains(process.env.SILKROAD_DRAFT_DOMAINS),
-  });
+  return draftPolicyFor(req.user.email);
 }
 
 /** Gmail client for draft send/delete; null when the channel is not configured. */
 function draftMailer(policy) {
-  const { GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, SILKROAD_USER_EMAIL } =
-    process.env;
-  if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN || !SILKROAD_USER_EMAIL) {
-    return null;
-  }
-  return createGmailClient({
-    clientId: GMAIL_CLIENT_ID,
-    clientSecret: GMAIL_CLIENT_SECRET,
-    refreshToken: GMAIL_REFRESH_TOKEN,
-    ownerEmail: SILKROAD_USER_EMAIL,
-    policy,
-  });
+  return draftMailerFor(policy);
 }
 
 function auditContext(req) {
