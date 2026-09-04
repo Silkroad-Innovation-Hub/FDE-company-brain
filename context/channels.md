@@ -187,6 +187,21 @@ questions always return a prioritized list (the prompt forbids "there are none")
 Env: `PHOTON_PROJECT_ID`, `PHOTON_PROJECT_SECRET`, `PHOTON_OWNER_HANDLE`, `PHOTON_NOTICE_MS`;
 on a Mac also running `channel:imessage`, `IMESSAGE_IGNORE_CHATS=<line>`.
 
+**Email over text (light version, Sep 3, 2026).** Two additions so the owner can run their
+inbox from the agent's number: (1) the brain snapshot carries an *Inbox* block — the five
+newest Gmail inbox messages (sender, subject, first line), fetched by
+`channels/gmail/inbox.ts` and cached 60s in `api/server/middleware/brain.js` — so "what's
+in my inbox?" answers in ~2s without a tool call; (2) the `email_draft` tool (registered
+like `brain_search`; `emailDraft: true` on a spec) calls `draftEmailForApproval`, so the
+agent drafts in the owner's Gmail and queues an approval, never sends. The owner decides by
+texting **send** (or approve / ship it) or **scrap it** (cancel / delete it): the Photon
+connector maps those to `POST /api/channels/decide` (service token), which runs the same
+audited `applyDraftDecision` path as the dashboard (`api/server/services/drafts.js`,
+shared with the approvals route). Recipients: the owner's own address, `SILKROAD_DRAFT_DOMAINS`,
+and named `SILKROAD_CONTACTS` (`Name=address,...`, resolved by first name and always
+draftable). Verified live: draft in 3.3s, "send" delivered to the owner's inbox. The robust
+version (threaded replies, reading a specific email, multiple pending drafts) is post-demo.
+
 ## Email
 
 **Transport: Gmail API via `googleapis` (new dependency in `packages/api`).** This is what
